@@ -74,13 +74,21 @@ class MainWindow(QMainWindow):
         )
         
         if file_path:
-            self.lbl_file_status.setText(f"Wczytano:\n{file_path.split('/')[-1]}")
-            # Tutaj w przyszłości przekażemy ścieżkę do self.processor
-            # self.processor.load_csv(file_path)
+            success, message = self.processor.load_csv(file_path)
             
-            # Testowe narysowanie prostej linii na dowód, że wykres działa
-            self.ax.clear()
-            self.ax.plot([0, 1, 2, 3], [0, 1, 4, 9], label="Test")
-            self.ax.legend()
-            self.ax.grid(True)
-            self.canvas.draw()
+            if success:
+                self.lbl_file_status.setText(f"Wczytany plik: {file_path.split('/')[-1]}")
+                
+                x, y_data = self.processor.get_raw_plot_data(self.processor.channels)
+
+                self.ax.clear()
+                for channel_name, y_val in y_data.items():
+                    self.ax.plot(x, y_val, label=channel_name)
+                self.ax.set_title("Przewodność w funkcji czasu")
+                self.ax.set_xlabel("Czas [s]")
+                self.ax.set_ylabel("Przewodność [μS/cm]")
+                self.ax.legend()
+                self.ax.grid(True)
+                self.canvas.draw()
+            else:
+                self.lbl_file_status.setText(message)

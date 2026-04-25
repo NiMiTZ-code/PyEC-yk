@@ -10,7 +10,14 @@ class DataProcessor:
 
     def load_csv(self, file_path):
         try:
-            dframe = pd.read_csv(file_path, sep=';', engine='python')
+            try:
+                dframe = pd.read_csv(file_path, sep=';', engine='python', encoding='utf-8')
+            except UnicodeDecodeError:
+                try:
+                    dframe = pd.read_csv(file_path, sep=';', engine='python', encoding='cp1250')
+                except UnicodeDecodeError:
+                    dframe = pd.read_csv(file_path, sep=';', engine='python', encoding='iso-8859-2')
+                    
             #usuń niepotrzebne kolumny
             unnecessary_cols = dframe.filter(like='Temperatura').columns
             dframe = dframe.drop(columns=unnecessary_cols)

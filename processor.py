@@ -124,7 +124,7 @@ class DataProcessor:
             #u nas nie ma różnicy w szybkości, więc proste poszukiwanie
 
             mixed_time = None
-            if lower_bound <= c_b_values[-1] <= upper_bound:
+            if not (lower_bound <= c_b_values[-1] <= upper_bound):
                 mixing_times[channel] = None
                 continue
 

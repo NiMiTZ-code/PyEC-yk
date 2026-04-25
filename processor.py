@@ -86,3 +86,36 @@ class DataProcessor:
                     self.processed_data[channel] = (self.raw_data[channel] - c_0) / (c_infinite - c_0)
 
         return True, "Pomyślnie obliczono stężenie bezwymiarowe C_b dla dostępnych kanałów."
+    
+    def find_mixing_time(self, lower_bound=0.95, upper_bound=1.05):
+        if self.processed_data is None:
+            raise ValueError("Brak przetworzonych danych. Najpierw oblicz C_b.")
+        
+        mixing_times = {}
+
+        for channel in self.channels:
+            if channel not in self.processed_data.columns:
+                continue
+            c_b_values = self.processed_data[channel].values
+            time_values = self.processed_data['Czas [s]'].values
+
+            #wektoryzowanie w NumPy jest ok dla bardzo duzej ilosci punktow danych
+            #u nas nie ma różnicy w szybkości, więc proste poszukiwanie
+
+            mixed_time = None
+            if lower_bound <= c_b_values[-1] <= upper_bound:
+                mixing_times[channel] = None
+                continue
+
+            for i in range(len(c_b_values) -1, -1, -1):
+                if not (lower_bound <= c_b_values[i] <= upper_bound):
+                    mixed_time = time_values[i+1]
+                    break
+            
+            if mixed_time is None:
+                mixed_time = time_values[0]
+
+            mixing_times[channel] = mixed_time
+        
+        return mixing_times
+     

@@ -50,6 +50,7 @@ class DataProcessor:
         
     # Tutaj pojawią się funkcje do obliczania C_b i czasu mieszania
     def get_C_infinite(self, channel, x_pts = 0):
+
         if self.raw_data is None:
             raise ValueError("Brak danych do przetworzenia. Wczytaj plik CSV.")
         
@@ -66,3 +67,22 @@ class DataProcessor:
             return self.raw_data[channel].iloc[:x_pts].mean()
         else:
             return self.raw_data[channel].iloc[-1]
+        
+    def calculate_C_b(self, c_infinite_dict):
+        #c_infinite_dict to słownik z kluczami jako nazwy kanałów i wartościami jako C_infinite dla tych kanałów
+        if self.raw_data is None:
+            raise ValueError("Brak danych do przetworzenia. Wczytaj plik CSV.")
+        
+        self.processed_data = self.raw_data[['Czas [s]']].copy()
+
+        for channel in self.channels:
+            if channel in c_infinite_dict:
+                c_infinite = c_infinite_dict[channel]
+                c_0 = self.raw_data[channel].iloc[0]
+
+                if c_infinite == c_0:
+                    self.processed_data[channel] = 0.0
+                else:
+                    self.processed_data[channel] = (self.raw_data[channel] - c_0) / (c_infinite - c_0)
+
+        return True, "Pomyślnie obliczono stężenie bezwymiarowe C_b dla dostępnych kanałów."

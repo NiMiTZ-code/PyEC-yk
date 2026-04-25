@@ -63,6 +63,6 @@ class DataProcessor:
 
         if x_pts > 0:
             x_pts = min(x_pts, len(self.raw_data))
-            return self.raw_data[channel].iloc[-x_pts:].mean()
+            return self.raw_data[channel].iloc[:x_pts].mean()
         else:
             return self.raw_data[channel].iloc[-1]

@@ -63,6 +63,9 @@ class MainWindow(QMainWindow):
         self.ax.set_ylabel("Przewodność / Stężenie")
         self.ax.grid(True)
 
+        #SIGNALS
+        self.btn_calculate.clicked.connect(self.on_plot_processed_clicked)
+        self.btn_find_time.clicked.connect(self.on_find_time_clicked)
         # Złożenie całości (rozciągnięcie wykresu proporcją stretch)
         main_layout.addLayout(control_panel, stretch=1)
         main_layout.addWidget(self.canvas, stretch=3)
@@ -92,3 +95,25 @@ class MainWindow(QMainWindow):
                 self.canvas.draw()
             else:
                 self.lbl_file_status.setText(message)
+
+    def plot_processed_data(self):
+        try:
+            x, y_data = self.processor.get_processed_plot_data(self.processor.channels)
+
+            self.ax.clear()
+            for channel_name, y_val in y_data.items():
+                self.ax.plot(x, y_val, label=channel_name)
+            self.ax.set_title("Stężenie bezwymiarowe C_b w funkcji czasu")
+            self.ax.set_xlabel("Czas [s]")
+            self.ax.set_ylabel("Stężenie bezwymiarowe C_b")
+            self.ax.legend()
+            self.ax.grid(True)
+            self.canvas.draw()
+        except ValueError as e:
+            self.lbl_file_status.setText(str(e))
+
+    def on_plot_processed_clicked(self):
+        self.plot_processed_data()
+        
+    def on_find_time_clicked(self):
+        print(self.processor.find_mixing_time())

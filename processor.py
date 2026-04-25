@@ -47,6 +47,18 @@ class DataProcessor:
         y_data = {ch: self.raw_data[ch].values.astype(float) for ch in valid_channels}
 
         return x_data, y_data
+
+    def get_processed_plot_data(self, selected_channels):
+        
+        if self.processed_data is None:
+            raise ValueError("Brak przetworzonych danych do wyświetlenia. Najpierw oblicz C_b.")
+        
+        valid_channels = [ch for ch in selected_channels if ch in self.processed_data.columns]
+        
+        x_data = self.processed_data['Czas [s]'].values.astype(float)
+        y_data = {ch: self.processed_data[ch].values.astype(float) for ch in valid_channels}
+
+        return x_data, y_data
         
     # Tutaj pojawią się funkcje do obliczania C_b i czasu mieszania
     def get_C_infinite(self, channel, x_pts = 0):
@@ -118,4 +130,7 @@ class DataProcessor:
             mixing_times[channel] = mixed_time
         
         return mixing_times
+    
+
+
      

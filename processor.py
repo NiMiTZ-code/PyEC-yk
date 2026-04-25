@@ -15,6 +15,9 @@ class DataProcessor:
             unnecessary_cols = dframe.filter(like='Temperatura').columns
             dframe = dframe.drop(columns=unnecessary_cols)
             dframe = dframe.iloc[1:].reset_index(drop=True)
+
+            dframe['Czas [s]'] = dframe.index * 0.5            
+            
             self.raw_data = dframe
 
             self.channels = [col for col in dframe.columns if any(s in col for s in ['N1', 'N2', 'N3', 'N4'])]
@@ -24,5 +27,17 @@ class DataProcessor:
             return True, f"Pomyślnie wczytano plik: {file_path}"
         except Exception as e:
             return False, f"Błąd podczas wczytywania pliku: {str(e)}"
+    
+    def get_raw_plot_data(self, selected_channels):
+        
+        if self.raw_data is None:
+            raise ValueError("Brak danych do przetworzenia. Wczytaj plik CSV.")
+        
+        valid_channels = [ch for ch in selected_channels if ch in self.raw_data.columns]
+        
+        x_data = self.raw_data['Czas [s]'].values.astype(float)
+        y_data = {ch: self.raw_data[ch].values.astype(float) for ch in valid_channels}
+
+        return x_data, y_data
         
     # Tutaj pojawią się funkcje do obliczania C_b i czasu mieszania

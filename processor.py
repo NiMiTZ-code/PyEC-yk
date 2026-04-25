@@ -19,7 +19,7 @@ class DataProcessor:
                     dframe = pd.read_csv(file_path, sep=';', decimal=',', engine='python', encoding='iso-8859-2')
 
             #usuń niepotrzebne kolumny
-            unnecessary_cols = dframe.filter(like='Temperatura').columns
+            unnecessary_cols = dframe.filter(regex='(?i)temperatura|nr').columns
             dframe = dframe.drop(columns=unnecessary_cols)
             dframe = dframe.iloc[1:].reset_index(drop=True)
 

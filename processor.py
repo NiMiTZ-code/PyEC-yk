@@ -1,5 +1,6 @@
 # processor.py
 import pandas as pd
+import numpy as np
 
 class DataProcessor:
     def __init__(self):
@@ -48,3 +49,20 @@ class DataProcessor:
         return x_data, y_data
         
     # Tutaj pojawią się funkcje do obliczania C_b i czasu mieszania
+    def get_C_infinite(self, channel, x_pts = 0):
+        if self.raw_data is None:
+            raise ValueError("Brak danych do przetworzenia. Wczytaj plik CSV.")
+        
+        if channel not in self.raw_data.columns:
+            raise ValueError(f"Nie znaleziono kanału: {channel}")
+        #idiotoodporność
+        try:
+            x_pts = int(x_pts) if x_pts else 0
+        except ValueError:
+            x_pts = 0
+
+        if x_pts > 0:
+            x_pts = min(x_pts, len(self.raw_data))
+            return self.raw_data[channel].iloc[-x_pts:].mean()
+        else:
+            return self.raw_data[channel].iloc[-1]

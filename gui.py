@@ -85,7 +85,7 @@ class MainWindow(QMainWindow):
         self.group_res.setLayout(layout_res)
         self.group_res.setVisible(False)
         
-        # Sekcja Obliczeń i Rysowania (przyciski na razie nieaktywne)
+        # Sekcja Obliczeń i Rysowania
         group_calc = QGroupBox("2. Analiza i Wykresy")
         layout_calc = QVBoxLayout()
         self.btn_plot_raw = QPushButton("Rysuj wykres przewodności")
@@ -111,6 +111,8 @@ class MainWindow(QMainWindow):
         control_panel.addWidget(self.group_res)
 
         # --- PANEL PRAWY (Wykres Matplotlib) ---
+        layout_plots = QVBoxLayout()
+
         self.figure = Figure()
         self.canvas = FigureCanvas(self.figure)
         self.ax = self.figure.add_subplot(111)
@@ -119,12 +121,24 @@ class MainWindow(QMainWindow):
         self.ax.set_ylabel("Przewodność / Stężenie")
         self.ax.grid(True)
 
+        self.figure_dimless = Figure()
+        self.canvas_dimless = FigureCanvas(self.figure_dimless)
+        self.ax_dimless = self.figure_dimless.add_subplot(111)
+        self.ax_dimless.set_title("Oczekuję na dane...")
+        self.ax_dimless.set_xlabel("Czas, s")
+        self.ax_dimless.set_ylabel("Stężenie bezwymiarowe C_b")
+        self.ax_dimless.grid(True)
+
+        layout_plots.addWidget(self.canvas)
+        layout_plots.addWidget(self.canvas_dimless)
+
         #SIGNALS
         self.btn_calculate.clicked.connect(self.on_plot_processed_clicked)
         self.btn_find_time.clicked.connect(self.on_find_time_clicked)
+
         # Złożenie całości (rozciągnięcie wykresu proporcją stretch)
         main_layout.addLayout(control_panel, stretch=1)
-        main_layout.addWidget(self.canvas, stretch=3)
+        main_layout.addLayout(layout_plots, stretch=3)
 
     def load_file(self):
         # Okno dialogowe wyboru pliku
@@ -163,28 +177,28 @@ class MainWindow(QMainWindow):
         try:
             x, y_data = self.processor.get_processed_plot_data(self.checked_channels, x_pts)
 
-            self.ax.clear()
+            self.ax_dimless.clear()
             for channel_name, y_val in y_data.items():
-                self.ax.plot(x, y_val, label=channel_name)
-            self.ax.set_title("Stężenie bezwymiarowe C_b w funkcji czasu")
-            self.ax.set_xlabel("Czas [s]")
-            self.ax.set_ylabel("Stężenie bezwymiarowe C_b")
-            self.ax.legend()
-            self.ax.grid(True)
-            self.canvas.draw()
+                self.ax_dimless.plot(x, y_val, label=channel_name)
+            self.ax_dimless.set_title("Stężenie bezwymiarowe C_b w funkcji czasu")
+            self.ax_dimless.set_xlabel("Czas [s]")
+            self.ax_dimless.set_ylabel("Stężenie bezwymiarowe C_b")
+            self.ax_dimless.legend()
+            self.ax_dimless.grid(True)
+            self.canvas_dimless.draw()
         except ValueError as e:
             self.lbl_file_status.setText(str(e))
 
     def on_plot_limits_toggled(self, checked):
         if checked:
-            self.ax.axhline(0.95, color='red', linestyle='--')
-            self.ax.axhline(1.05, color='red', linestyle='--')
+            self.ax_dimless.axhline(0.95, color='red', linestyle='--')
+            self.ax_dimless.axhline(1.05, color='red', linestyle='--')
         else:
-            lines = self.ax.get_lines()
+            lines = self.ax_dimless.get_lines()
             for line in lines:
                 if line.get_label() in ['Granica 0.95', 'Granica 1.05']:
                     line.remove()
-        self.canvas.draw()
+        self.canvas_dimless.draw()
 
     def on_plot_processed_clicked(self):
         mes_num = self.ibox_mes_num.text().strip()

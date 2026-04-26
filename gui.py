@@ -1,6 +1,6 @@
 import sys
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                               QPushButton, QLabel, QFileDialog, QGroupBox)
+                               QPushButton, QLabel, QFileDialog, QGroupBox, QCheckBox, QLineEdit)
 from PySide6.QtCore import Qt
 
 # Importy potrzebne do osadzenia Matplotlib w PySide6
@@ -16,6 +16,7 @@ class MainWindow(QMainWindow):
         self.resize(1000, 600)
         
         self.processor = DataProcessor()
+        self.checked_channels = []
 
         # Główny widget i layout
         central_widget = QWidget()
@@ -35,25 +36,80 @@ class MainWindow(QMainWindow):
         layout_file.addWidget(self.btn_load)
         layout_file.addWidget(self.lbl_file_status)
         group_file.setLayout(layout_file)
+
+        #Sekcja wyboru kanałów
+        group_channel = QGroupBox("Wybór kanałów")
+        layout_channel = QHBoxLayout()
+        self.chbox_channel_one = QCheckBox("Kanał 1")
+        self.chbox_channel_two = QCheckBox("Kanał 2")
+        self.chbox_channel_three = QCheckBox("Kanał 3")
+        self.chbox_channel_four = QCheckBox("Kanał 4")
+        self.chbox_channel_one.toggled.connect(lambda checked: self.add_channel(checked, "N1"))
+        self.chbox_channel_two.toggled.connect(lambda checked: self.add_channel(checked, "N2"))
+        self.chbox_channel_three.toggled.connect(lambda checked: self.add_channel(checked, "N3"))
+        self.chbox_channel_four.toggled.connect(lambda checked: self.add_channel(checked, "N4"))
+        self.chbox_channel_one.setEnabled(False)
+        self.chbox_channel_two.setEnabled(False)
+        self.chbox_channel_three.setEnabled(False)
+        self.chbox_channel_four.setEnabled(False)
+
+        layout_channel.addWidget(self.chbox_channel_one)
+        layout_channel.addWidget(self.chbox_channel_two)
+        layout_channel.addWidget(self.chbox_channel_three)
+        layout_channel.addWidget(self.chbox_channel_four)
+        group_channel.setLayout(layout_channel)
+
+        #Sekcja ilości pomiarów
+        group_meas_num= QGroupBox()
+        layout_meas_num = QHBoxLayout()
+        self.ibox_mes_num = QLineEdit()
+        self.ibox_mes_num.setPlaceholderText("Wpisz wartość...")
+        lbl_mes_num = QLabel("Ilość pomiarów:")
+        
+        layout_meas_num.addWidget(lbl_mes_num)
+        layout_meas_num.addWidget(self.ibox_mes_num)
+        group_meas_num.setLayout(layout_meas_num)
+
+        #Sekcja wyników
+        self.group_res = QGroupBox("3. Wyniki")
+        layout_res = QVBoxLayout()
+        self.lbl_ch_one_res = QLabel("Kanał 1: -")
+        self.lbl_ch_two_res = QLabel("Kanał 2: -")
+        self.lbl_ch_three_res = QLabel("Kanał 3: -")
+        self.lbl_ch_four_res = QLabel("Kanał 4: -")
+        
+        layout_res.addWidget(self.lbl_ch_one_res)
+        layout_res.addWidget(self.lbl_ch_two_res)
+        layout_res.addWidget(self.lbl_ch_three_res)
+        layout_res.addWidget(self.lbl_ch_four_res)
+        self.group_res.setLayout(layout_res)
+        self.group_res.setVisible(False)
         
         # Sekcja Obliczeń i Rysowania (przyciski na razie nieaktywne)
         group_calc = QGroupBox("2. Analiza i Wykresy")
         layout_calc = QVBoxLayout()
         self.btn_plot_raw = QPushButton("Rysuj wykres przewodności")
-        self.btn_calculate = QPushButton("Przelicz (Stężenie bezwymiarowe)")
-        self.btn_plot_limits = QPushButton("Dodaj granice 0.95 - 1.05")
+        self.btn_plot_raw.clicked.connect(self.plot_data)
+        self.btn_calculate = QPushButton("Przelicz i rysuj wykres (Stężenie bezwymiarowe)")
+        self.chbox_plot_limits = QCheckBox("Dodaj granice 0.95 - 1.05")
+        self.chbox_plot_limits.toggled.connect(self.on_plot_limits_toggled)
         self.btn_find_time = QPushButton("Odczytaj czas mieszania")
         
+        layout_calc.addWidget(group_channel)
         layout_calc.addWidget(self.btn_plot_raw)
+        layout_calc.addWidget(group_meas_num)
         layout_calc.addWidget(self.btn_calculate)
-        layout_calc.addWidget(self.btn_plot_limits)
+        layout_calc.addWidget(self.chbox_plot_limits)
         layout_calc.addWidget(self.btn_find_time)
         group_calc.setLayout(layout_calc)
+
+        
 
         # Dodanie grup do lewego panelu
         control_panel.addWidget(group_file)
         control_panel.addWidget(group_calc)
-        
+        control_panel.addWidget(self.group_res)
+
         # --- PANEL PRAWY (Wykres Matplotlib) ---
         self.figure = Figure()
         self.canvas = FigureCanvas(self.figure)
@@ -81,24 +137,31 @@ class MainWindow(QMainWindow):
             
             if success:
                 self.lbl_file_status.setText(f"Wczytany plik: {file_path.split('/')[-1]}")
-                
-                x, y_data = self.processor.get_raw_plot_data(self.processor.channels)
-
-                self.ax.clear()
-                for channel_name, y_val in y_data.items():
-                    self.ax.plot(x, y_val, label=channel_name)
-                self.ax.set_title("Przewodność w funkcji czasu")
-                self.ax.set_xlabel("Czas [s]")
-                self.ax.set_ylabel("Przewodność [μS/cm]")
-                self.ax.legend()
-                self.ax.grid(True)
-                self.canvas.draw()
+                self.chbox_channel_one.setEnabled(True)
+                self.chbox_channel_two.setEnabled(True)
+                self.chbox_channel_three.setEnabled(True)
+                self.chbox_channel_four.setEnabled(True)
             else:
                 self.lbl_file_status.setText(message)
 
-    def plot_processed_data(self):
+    def plot_data(self):
         try:
-            x, y_data = self.processor.get_processed_plot_data(self.processor.channels)
+            x, y_data = self.processor.get_raw_plot_data(self.checked_channels)
+            self.ax.clear()
+            for channel_name, y_val in y_data.items():
+                self.ax.plot(x, y_val, label=channel_name)
+            self.ax.set_title("Przewodność w funkcji czasu")
+            self.ax.set_xlabel("Czas [s]")
+            self.ax.set_ylabel("Przewodność [μS/cm]")
+            self.ax.legend()
+            self.ax.grid(True)
+            self.canvas.draw()
+        except ValueError as e:
+            self.lbl_file_status.setText(str(e))
+
+    def plot_processed_data(self, x_pts):
+        try:
+            x, y_data = self.processor.get_processed_plot_data(self.checked_channels, x_pts)
 
             self.ax.clear()
             for channel_name, y_val in y_data.items():
@@ -112,8 +175,59 @@ class MainWindow(QMainWindow):
         except ValueError as e:
             self.lbl_file_status.setText(str(e))
 
+    def on_plot_limits_toggled(self, checked):
+        if checked:
+            self.ax.axhline(0.95, color='red', linestyle='--')
+            self.ax.axhline(1.05, color='red', linestyle='--')
+        else:
+            lines = self.ax.get_lines()
+            for line in lines:
+                if line.get_label() in ['Granica 0.95', 'Granica 1.05']:
+                    line.remove()
+        self.canvas.draw()
+
     def on_plot_processed_clicked(self):
-        self.plot_processed_data()
+        mes_num = self.ibox_mes_num.text().strip()
+
+        try:
+            x_pts = int(mes_num) if mes_num else 0
+        except ValueError:
+            self.lbl_file_status.setText("Nieprawidłowa ilość pomiarów. Używam domyślnej wartości.")
+            return
+        
+        self.plot_processed_data(x_pts)
         
     def on_find_time_clicked(self):
-        print(self.processor.find_mixing_time())
+        mixing_times = self.processor.find_mixing_time()
+        label_map = {
+            next((c for c in self.processor.channels if "N1" in c), None): self.lbl_ch_one_res,
+            next((c for c in self.processor.channels if "N2" in c), None): self.lbl_ch_two_res,
+            next((c for c in self.processor.channels if "N3" in c), None): self.lbl_ch_three_res,
+            next((c for c in self.processor.channels if "N4" in c), None): self.lbl_ch_four_res,
+        }
+        for ch, label in label_map.items():
+            if ch not in mixing_times:
+                label.setText(f"{ch}: brak danych")
+            else:
+                t = mixing_times[ch]
+            if t is None:
+                label.setText(f"{ch}: nie osiągnięto zakresu")
+            else:
+                label.setText(f"{ch}: {t:.2f} s")
+
+        self.group_res.setVisible(True)
+        print(mixing_times)
+
+    def add_channel(self, checked, channel_name):
+        full_name = next((c for c in self.processor.channels if channel_name in c), None)
+
+        if not full_name:
+            self.lbl_file_status.setText(f"Nie znaleziono kanału zawierającego: {channel_name}")
+            return
+        
+        if checked:
+            if full_name not in self.checked_channels:
+                self.checked_channels.append(full_name)
+        else:
+            if full_name in self.checked_channels:
+                self.checked_channels.remove(full_name)

@@ -48,9 +48,9 @@ class DataProcessor:
 
         return x_data, y_data
 
-    def get_processed_plot_data(self, selected_channels):
+    def get_processed_plot_data(self, selected_channels, x_pts=0):
         
-        self.process_data()
+        self.process_data(x_pts)
 
         if self.processed_data is None:
             raise ValueError("Brak przetworzonych danych do wyświetlenia. Najpierw oblicz C_b.")
@@ -101,11 +101,11 @@ class DataProcessor:
 
         return True, "Pomyślnie obliczono stężenie bezwymiarowe C_b dla dostępnych kanałów."
     
-    def process_data(self):
+    def process_data(self, x_pts=0):
         if self.raw_data is None:
             raise ValueError("Brak danych do przetworzenia. Wczytaj plik CSV.")
         
-        c_infinite_dict = {channel: self.get_C_infinite(channel) for channel in self.channels}
+        c_infinite_dict = {channel: self.get_C_infinite(channel, x_pts) for channel in self.channels}
         return self.calculate_C_b(c_infinite_dict)
 
     def find_mixing_time(self, lower_bound=0.95, upper_bound=1.05):

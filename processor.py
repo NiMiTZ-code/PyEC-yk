@@ -78,7 +78,7 @@ class DataProcessor:
 
         if x_pts > 0:
             x_pts = min(x_pts, len(self.raw_data))
-            return self.raw_data[channel].iloc[:x_pts].mean()
+            return self.raw_data[channel].iloc[-x_pts:].mean() #avg wyliczana per channel
         else:
             return self.raw_data[channel].iloc[-1]
         
@@ -91,7 +91,7 @@ class DataProcessor:
 
         for channel in self.channels:
             if channel in c_infinite_dict:
-                c_infinite = c_infinite_dict[channel]
+                c_infinite = c_infinite_dict[channel] #avg per channel, ale można też zrobić avg dla wszystkich kanałów
                 c_0 = self.raw_data[channel].iloc[0]
 
                 if c_infinite == c_0:

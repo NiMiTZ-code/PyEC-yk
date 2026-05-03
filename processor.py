@@ -108,7 +108,7 @@ class DataProcessor:
         c_infinite_dict = {channel: self.get_C_infinite(channel, x_pts) for channel in self.channels}
         return self.calculate_C_b(c_infinite_dict)
 
-    def find_mixing_time(self, lower_bound=0.95, upper_bound=1.05):
+    def find_mixing_time(self, x_filtering_pts=20, lower_bound=0.95, upper_bound=1.05):
         if self.processed_data is None:
             raise ValueError("Brak przetworzonych danych. Najpierw oblicz C_b.")
         
@@ -117,27 +117,28 @@ class DataProcessor:
         for channel in self.channels:
             if channel not in self.processed_data.columns:
                 continue
-            c_b_values = self.processed_data[channel].values
-            time_values = self.processed_data['Czas [s]'].values
 
-            #wektoryzowanie w NumPy jest ok dla bardzo duzej ilosci punktow danych
-            #u nas nie ma różnicy w szybkości, więc proste poszukiwanie
-
-            mixed_time = None
-            if not (lower_bound <= c_b_values[-1] <= upper_bound):
-                mixing_times[channel] = None
-                continue
-
-            for i in range(len(c_b_values) -1, -1, -1):
-                if not (lower_bound <= c_b_values[i] <= upper_bound):
-                    mixed_time = time_values[i+1]
-                    break
+            c_b_series = self.processed_data[channel]
+            is_out_of_bounds = (c_b_series < lower_bound) | (c_b_series > upper_bound)
             
-            if mixed_time is None:
-                mixed_time = time_values[0]
+            if x_filtering_pts > 0:
+                rolling_sum = is_out_of_bounds.rolling(window=x_filtering_pts+1, min_periods=1).sum()
+                true_out_of_bounds = is_out_of_bounds & (rolling_sum >= x_filtering_pts)
+            else:
+                true_out_of_bounds = is_out_of_bounds
 
-            mixing_times[channel] = mixed_time
-        
+            if true_out_of_bounds.any():
+                last_OOB = true_out_of_bounds[true_out_of_bounds].index[-1]
+
+                if last_OOB == len(self.processed_data) - 1:
+                    mixing_time = None
+                else:
+                    mixing_time = self.processed_data.loc[last_OOB + 1, 'Czas [s]']
+            else:
+                mixing_time = self.processed_data['Czas [s]'].iloc[0]
+            
+            mixing_times[channel] = mixing_time
+
         return mixing_times
     
 

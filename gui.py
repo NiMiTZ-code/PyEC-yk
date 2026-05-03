@@ -203,7 +203,11 @@ class MainWindow(QMainWindow):
             cursor = mplcursors.cursor(self.ax_dimless.get_lines(), hover=True)
             @cursor.connect("add")
             def on_add(sel):
-                x_val, y_val = sel.target
+                idx = int(round(sel.index))
+                x_val, y_val = sel.artist.get_data()
+                x_val = x_val[idx]
+                y_val = y_val[idx]
+                sel.annotation.xy = (x_val, y_val)
                 sel.annotation.set_text(f"Czas: {x_val:.1f} s\nC_b: {y_val:.3f}")
                 sel.annotation.get_bbox_patch().set(fc="white", alpha=0.9, edgecolor="black")
 

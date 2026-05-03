@@ -73,11 +73,23 @@ class MainWindow(QMainWindow):
         #Sekcja wyników
         self.group_res = QGroupBox("3. Wyniki")
         layout_res = QVBoxLayout()
+
+        layout_interval = QHBoxLayout()
+        lbl_interval = QLabel("Przedzial o-o-b (ilość pkt przed):")
+        self.ibox_interval = QLineEdit()
+        self.ibox_interval.setPlaceholderText("Wpisz wartość (np. 20)")
+        self.ibox_interval.setText("20")  # Wpisujemy domyślną wartość na start!
+        
+        layout_interval.addWidget(lbl_interval)
+        layout_interval.addWidget(self.ibox_interval)
+
         self.lbl_ch_one_res = QLabel("Kanał 1: -")
         self.lbl_ch_two_res = QLabel("Kanał 2: -")
         self.lbl_ch_three_res = QLabel("Kanał 3: -")
         self.lbl_ch_four_res = QLabel("Kanał 4: -")
         
+        layout_res.addLayout(layout_interval)
+
         layout_res.addWidget(self.lbl_ch_one_res)
         layout_res.addWidget(self.lbl_ch_two_res)
         layout_res.addWidget(self.lbl_ch_three_res)
@@ -212,7 +224,15 @@ class MainWindow(QMainWindow):
         self.plot_processed_data(x_pts)
         
     def on_find_time_clicked(self):
-        mixing_times = self.processor.find_mixing_time()
+
+        interval_text = self.ibox_interval.text().strip()
+        try:
+            x_pts = int(interval_text) if interval_text else 1
+        except ValueError:
+            x_pts = 1
+            self.ibox_interval.setText("1")
+
+        mixing_times = self.processor.find_mixing_time(x_filtering_pts=x_pts)
         label_map = {
             next((c for c in self.processor.channels if "N1" in c), None): self.lbl_ch_one_res,
             next((c for c in self.processor.channels if "N2" in c), None): self.lbl_ch_two_res,

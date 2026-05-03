@@ -36,6 +36,15 @@ class DataProcessor:
         except Exception as e:
             return False, f"Błąd podczas wczytywania pliku: {str(e)}"
     
+    def export_data(self, file_path):
+        if self.processed_data is None:
+            raise ValueError("Brak przetworzonych danych do eksportu. Najpierw oblicz C_b.")
+        try:
+            self.processed_data.to_csv(file_path, index=False, sep=';', decimal=',', encoding='utf-8')
+            return True, f"Pomyślnie wyeksportowano dane do: {file_path}"
+        except Exception as e:
+            return False, f"Błąd podczas eksportowania danych: {str(e)}"
+        
     def get_raw_plot_data(self, selected_channels):
         
         if self.raw_data is None:
@@ -108,7 +117,7 @@ class DataProcessor:
         c_infinite_dict = {channel: self.get_C_infinite(channel, x_pts) for channel in self.channels}
         return self.calculate_C_b(c_infinite_dict)
 
-    def find_mixing_time(self, x_filtering_pts=20, lower_bound=0.95, upper_bound=1.05):
+    def find_mixing_time(self, x_filtering_pts=1, lower_bound=0.95, upper_bound=1.05):
         if self.processed_data is None:
             raise ValueError("Brak przetworzonych danych. Najpierw oblicz C_b.")
         
@@ -138,6 +147,9 @@ class DataProcessor:
                 mixing_time = self.processed_data['Czas [s]'].iloc[0]
             
             mixing_times[channel] = mixing_time
+
+        #DEBUG
+        #self.export_data("processed_data_debug.csv")
 
         return mixing_times
     

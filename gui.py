@@ -6,6 +6,8 @@ from PySide6.QtCore import Qt
 # Importy potrzebne do osadzenia Matplotlib w PySide6
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from mpl_interactions import zoom_factory, panhandler
+import mplcursors
 
 from processor import DataProcessor
 
@@ -197,7 +199,19 @@ class MainWindow(QMainWindow):
             self.ax_dimless.set_ylabel("Stężenie bezwymiarowe C_b")
             self.ax_dimless.legend()
             self.ax_dimless.grid(True)
+
+            cursor = mplcursors.cursor(self.ax_dimless.get_lines(), hover=True)
+            @cursor.connect("add")
+            def on_add(sel):
+                x_val, y_val = sel.target
+                sel.annotation.set_text(f"Czas: {x_val:.1f} s\nC_b: {y_val:.3f}")
+                sel.annotation.get_bbox_patch().set(fc="white", alpha=0.9, edgecolor="black")
+
+            self.zoom = zoom_factory(self.ax_dimless)
+            self.ph = panhandler(self.figure_dimless, button=2)
+            
             self.canvas_dimless.draw()
+
         except ValueError as e:
             self.lbl_file_status.setText(str(e))
 

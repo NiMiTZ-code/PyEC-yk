@@ -267,6 +267,8 @@ class MainWindow(QMainWindow):
             return
         
         self.plot_processed_data(x_pts)
+        if self.chbox_plot_limits.isChecked():
+            self.chbox_plot_limits.setChecked(False)
         
     def on_find_time_clicked(self):
 

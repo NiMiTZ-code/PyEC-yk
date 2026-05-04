@@ -75,7 +75,7 @@
         <b>Zasada działania:</b> Algorytm poszukuje momentu, po którym wykres stężenia C<sub>b</sub> ostatecznie wchodzi w przedział tolerancji (np. 0.95 - 1.05) i już z niego nie wychodzi.
     </div>
     <ul>
-        <li><b>Przedział o-o-b (Filtr szumów):</b> Wpisz ilość punktów dla kroczącego okna filtrującego. Określa to, ile punktów <i>poza zakresem</i> (out-of-bounds) musi wystąpić bezpośrednio po sobie, aby algorytm uznał to za faktyczne zakłócenie, a nie pojedynczy szum z czujnika.</li>
+        <li><b>Przedział filtrowania:</b> Wpisz ilość punktów dla kroczącego okna filtrującego. Określa to, ile punktów <i>poza zakresem</i> (out-of-bounds) musi wystąpić bezpośrednio po sobie i przed wartością czasu mieszania, aby algorytm uznał to za faktyczne zakłócenie, a nie pojedynczy szum z czujnika.</li>
         <li>Algorytm przyjmie wartość czasu mieszania jako punkt następujący po zdefiniowanym przedziale i pierwszy, który znajduje się w granicach tolerancji. </li>
         <li>Wyniki wyświetlą się bezpośrednio pod polem wpisywania w sekcji wyników.</li>
     </ul>

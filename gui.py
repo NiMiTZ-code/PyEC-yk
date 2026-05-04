@@ -22,6 +22,7 @@ class MainWindow(QMainWindow):
         self.processor = DataProcessor()
         self.checked_channels = []
         self.checkbox_dict = {}
+        self.mix_time_results_lbls = {}
 
         # Główny widget i layout
         central_widget = QWidget()
@@ -63,25 +64,18 @@ class MainWindow(QMainWindow):
         layout_res = QVBoxLayout()
 
         layout_interval = QHBoxLayout()
-        lbl_interval = QLabel("Przedzial o-o-b (ilość pkt przed):")
+        lbl_interval = QLabel("Przedział filtrowania (ilość punktów):")
         self.ibox_interval = QLineEdit()
         self.ibox_interval.setPlaceholderText("Wpisz wartość (np. 20)")
-        self.ibox_interval.setText("20")  # Wpisujemy domyślną wartość na start!
+        self.ibox_interval.setText("1")  # Wpisujemy domyślną wartość na start!
         
         layout_interval.addWidget(lbl_interval)
         layout_interval.addWidget(self.ibox_interval)
-
-        self.lbl_ch_one_res = QLabel("Kanał 1: -")
-        self.lbl_ch_two_res = QLabel("Kanał 2: -")
-        self.lbl_ch_three_res = QLabel("Kanał 3: -")
-        self.lbl_ch_four_res = QLabel("Kanał 4: -")
-        
         layout_res.addLayout(layout_interval)
 
-        layout_res.addWidget(self.lbl_ch_one_res)
-        layout_res.addWidget(self.lbl_ch_two_res)
-        layout_res.addWidget(self.lbl_ch_three_res)
-        layout_res.addWidget(self.lbl_ch_four_res)
+        self.layout_res_lbls = QVBoxLayout()
+        layout_res.addLayout(self.layout_res_lbls)
+
         self.group_res.setLayout(layout_res)
         self.group_res.setVisible(False)
         
@@ -185,13 +179,25 @@ class MainWindow(QMainWindow):
 
                 for channel in self.processor.channels:
                     match = re.search(r'N\d+', channel)
-                    display_name = match.group(0) if match else channel
+                    display_name = match.group() if match else channel
                     checkbox = QCheckBox(display_name)
                     checkbox.toggled.connect(lambda checked, ch=channel: self.add_channel(checked, ch))
                     self.layout_channel.addWidget(checkbox)
                     self.checkbox_dict[channel] = checkbox
+                
+                #results labels
+                for i in reversed(range(self.layout_res_lbls.count())):
+                    self.layout_res_lbls.itemAt(i).widget().setParent(None)
+                self.mix_time_results_lbls.clear()
+                for channel in self.processor.channels:
+                    match = re.search(r'N\d+', channel)
+                    display_name = match.group() if match else channel
+                    lbl = QLabel(f"{display_name}: -")
+                    self.layout_res_lbls.addWidget(lbl)
+                    self.mix_time_results_lbls[channel] = lbl
             else:
                 self.lbl_file_status.setText(message)
+
 
     def plot_data(self):
         try:
@@ -273,21 +279,17 @@ class MainWindow(QMainWindow):
             self.ibox_interval.setText("1")
 
         mixing_times = self.processor.find_mixing_time(x_filtering_pts=x_pts)
-        label_map = {
-            next((c for c in self.processor.channels if "N1" in c), None): self.lbl_ch_one_res,
-            next((c for c in self.processor.channels if "N2" in c), None): self.lbl_ch_two_res,
-            next((c for c in self.processor.channels if "N3" in c), None): self.lbl_ch_three_res,
-            next((c for c in self.processor.channels if "N4" in c), None): self.lbl_ch_four_res,
-        }
-        for ch, label in label_map.items():
+        
+        for ch, label in self.mix_time_results_lbls.items():
             if ch not in mixing_times:
-                label.setText(f"{ch}: brak danych")
+                label.setText(f"{ch}: Brak danych")
             else:
-                t = mixing_times[ch]
-            if t is None:
-                label.setText(f"{ch}: nie osiągnięto zakresu")
-            else:
-                label.setText(f"{ch}: {t:.2f} s")
+                mt = mixing_times[ch]
+                if mt is None:
+                    label.setText(f"{ch}: Nie osiągnięto pełnego wymieszania")
+                else:
+                    label.setText(f"{ch}: {mt:.2f} s")
+
 
         self.group_res.setVisible(True)
         print(mixing_times)

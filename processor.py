@@ -1,6 +1,7 @@
 # processor.py
 import pandas as pd
 import numpy as np
+from datetime import datetime
 
 class DataProcessor:
     def __init__(self):
@@ -41,6 +42,70 @@ class DataProcessor:
             raise ValueError("Brak przetworzonych danych do eksportu. Najpierw oblicz C_b.")
         try:
             self.processed_data.to_csv(file_path, index=False, sep=';', decimal=',', encoding='utf-8')
+            return True, f"Pomyślnie wyeksportowano dane do: {file_path}"
+        except Exception as e:
+            return False, f"Błąd podczas eksportowania danych: {str(e)}"
+        
+    def export_excel(self, file_path):
+        if self.processed_data is None:
+            raise ValueError("Brak przetworzonych danych do eksportu. Najpierw oblicz C_b.")
+        try:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            file_path = f"{file_path.rstrip('.xlsx')}_{timestamp}.xlsx"
+
+            df = self.processed_data.copy()
+            #df['LowerBound'] = 0.95
+            #df['UpperBound'] = 1.05
+            
+            with pd.ExcelWriter(file_path, engine='xlsxwriter') as writer:
+                df.to_excel(writer, sheet_name='Dane', index=False)
+                workbook = writer.book
+                worksheet = writer.sheets['Dane']
+
+                chart = workbook.add_chart({'type': 'scatter'})
+
+                time_col = df.columns.get_loc('Czas [s]')
+                n = len(df)
+
+                for ch in self.channels:
+                    if ch in df.columns:
+                        col_idx = df.columns.get_loc(ch)
+                        chart.add_series({
+                            'name': ['Dane', 0, col_idx],
+                            'categories': ['Dane', 1, time_col, n, time_col],
+                            'values': ['Dane', 1, col_idx, n, col_idx],
+                            'marker': {'type': 'none'},
+                            'line': {'width': 1.25},
+                        })
+
+                x_min = float(df['Czas [s]'].min())
+                x_max = float(df['Czas [s]'].max())
+
+
+                # --- LINIA 0.95 ---
+                #lb_col = df.columns.get_loc('LowerBound')
+                chart.add_series({
+                    'name':       'Dolna granica (0.95)',
+                    'categories': f'={{{x_min},{x_max}}}',
+                    'values':     '={0.95,0.95}',
+                    'marker':     {'type': 'none'},
+                    'line':       {'color': 'red', 'width': 1.0, 'dash_type': 'dash'}
+                })
+
+                # --- LINIA 1.05 ---
+                #ub_col = df.columns.get_loc('UpperBound')
+                chart.add_series({
+                    'name':       'Górna granica (1.05)',
+                    'categories': f'={{{x_min},{x_max}}}',
+                    'values':     '={1.05,1.05}',
+                    'marker':     {'type': 'none'},
+                    'line':       {'color': 'red', 'width': 1.0, 'dash_type': 'dash'}
+                })
+                chart.set_title({'name': 'Przewodność bezwymiarowa C_b'})
+                chart.set_x_axis({'name': 'Czas [s]'})
+                chart.set_y_axis({'name': 'C_b', 'major_gridlines': {'visible': True}})
+                chart.set_legend({'position': 'bottom'})
+                worksheet.insert_chart('G2', chart, {'x_scale': 1.5, 'y_scale': 1.5})
             return True, f"Pomyślnie wyeksportowano dane do: {file_path}"
         except Exception as e:
             return False, f"Błąd podczas eksportowania danych: {str(e)}"
@@ -149,7 +214,8 @@ class DataProcessor:
             mixing_times[channel] = mixing_time
 
         #DEBUG
-        #self.export_data("processed_data_debug.csv")
+        #self.export_data("processed_data_debug_d.csv")
+        self.export_excel("wyniki.xlsx")
 
         return mixing_times
     

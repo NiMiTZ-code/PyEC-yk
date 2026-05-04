@@ -1,6 +1,7 @@
 import sys
-from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                               QPushButton, QLabel, QFileDialog, QGroupBox, QCheckBox, QLineEdit)
+import os
+from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTextBrowser,
+                               QPushButton, QLabel, QFileDialog, QGroupBox, QCheckBox, QLineEdit, QDialog)
 from PySide6.QtCore import Qt
 
 # Importy potrzebne do osadzenia Matplotlib w PySide6
@@ -28,7 +29,13 @@ class MainWindow(QMainWindow):
         # --- PANEL LEWY (Sterowanie) ---
         control_panel = QVBoxLayout()
         control_panel.setAlignment(Qt.AlignTop)
-        
+
+
+        footer_layout = QHBoxLayout()
+        self.btn_help = QPushButton("Dokumentacja i Instrukcja Obsługi")
+        self.btn_help.clicked.connect(self.show_documentation)
+        footer_layout.addWidget(self.btn_help)
+
         # Sekcja Wczytywania
         group_file = QGroupBox("1. Operacje na plikach")
         layout_file = QVBoxLayout()
@@ -117,12 +124,11 @@ class MainWindow(QMainWindow):
         layout_calc.addWidget(self.btn_find_time)
         group_calc.setLayout(layout_calc)
 
-        
-
         # Dodanie grup do lewego panelu
         control_panel.addWidget(group_file)
         control_panel.addWidget(group_calc)
         control_panel.addWidget(self.group_res)
+        control_panel.addLayout(footer_layout)
 
         # --- PANEL PRAWY (Wykres Matplotlib) ---
         layout_plots = QVBoxLayout()
@@ -283,3 +289,25 @@ class MainWindow(QMainWindow):
         else:
             if full_name in self.checked_channels:
                 self.checked_channels.remove(full_name)
+
+    def show_documentation(self):
+        self.help_dialog = QDialog(self)
+        self.help_dialog.setWindowTitle("Dokumentacja | Instrukcja obsługi")
+        self.help_dialog.resize(650, 600)
+
+        layout = QVBoxLayout(self.help_dialog)
+
+        browser = QTextBrowser()
+        browser.setOpenExternalLinks(True)
+        doc_path = os.path.join(os.path.dirname(__file__), "docs", "docs.html")
+
+        try:
+            with open(doc_path, 'r', encoding='utf-8') as file:
+                html_content = file.read()
+                browser.setHtml(html_content)
+        except FileNotFoundError:
+            browser.setHtml("<h2 style='color:red;'>Błąd 404</h2><p>Nie znaleziono pliku <b>docs.html</b> w folderze z aplikacją.</p>")
+        except Exception as e:
+            browser.setHtml(f"<h2 style='color:red;'>Błąd odczytu</h2><p>{str(e)}</p>")
+        layout.addWidget(browser)
+        self.help_dialog.show()

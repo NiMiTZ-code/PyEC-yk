@@ -1,6 +1,7 @@
 # processor.py
 import pandas as pd
 import numpy as np
+import re
 
 class DataProcessor:
     def __init__(self):
@@ -24,11 +25,25 @@ class DataProcessor:
             dframe = dframe.drop(columns=unnecessary_cols)
             dframe = dframe.iloc[1:].reset_index(drop=True)
 
-            dframe['Czas [s]'] = dframe.index * 0.5            
+            time_col_name = "Data i czas" #nazwa kolumny zawierająca czasy
+            time_step = 0.5 #default do 0,5 s
+            if time_col_name in dframe.columns:
+                try:
+                    time_strings = dframe[time_col_name].head(20).astype(str).str.replace(',','.')
+                    parsed_time = pd.to_datetime(time_strings, format='%M:%S.%f', errors='coerce')
+                    calculated_step = parsed_time.diff().dt.total_seconds().median()
+                    
+                    if pd.notna(calculated_step) and calculated_step > 0:
+                        time_step = calculated_step
+                except Exception as e:
+                    print(f"Nie można przetworzyć kolumny czasu: {str(e)}. Używam domyślnego kroku czasowego {time_step} s.")
+
+
+            dframe['Czas [s]'] = dframe.index * time_step            
             
             self.raw_data = dframe
 
-            self.channels = [col for col in dframe.columns if any(s in col for s in ['N1', 'N2', 'N3', 'N4'])]
+            self.channels = [col for col in dframe.columns if re.search(r'N\d+', col)]
             if not self.channels:
                 raise ValueError("Nie znaleziono kolumn z danymi przewodności (N1, N2, N3, N4).")
             
@@ -147,9 +162,6 @@ class DataProcessor:
                 mixing_time = self.processed_data['Czas [s]'].iloc[0]
             
             mixing_times[channel] = mixing_time
-
-        #DEBUG
-        #self.export_data("processed_data_debug.csv")
 
         return mixing_times
     

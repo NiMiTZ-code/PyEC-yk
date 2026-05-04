@@ -27,6 +27,14 @@ class DataProcessor:
             dframe = dframe.drop(columns=unnecessary_cols)
             dframe = dframe.iloc[1:].reset_index(drop=True)
 
+            rename_dict = {}
+            for col in dframe.columns:
+                match = re.search(r'N\d+', col)
+                if match:
+                    rename_dict[col] = match.group() # Pobiera tylko np. "N1"
+            
+            dframe.rename(columns=rename_dict, inplace=True)
+
             time_col_name = "Data i czas" #nazwa kolumny zawierająca czasy
             time_step = 0.5 #default do 0,5 s
             if time_col_name in dframe.columns:

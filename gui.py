@@ -179,9 +179,7 @@ class MainWindow(QMainWindow):
                 self.checked_channels.clear()
 
                 for channel in self.processor.channels:
-                    match = re.search(r'N\d+', channel)
-                    display_name = match.group() if match else channel
-                    checkbox = QCheckBox(display_name)
+                    checkbox = QCheckBox(channel)
                     checkbox.toggled.connect(lambda checked, ch=channel: self.add_channel(checked, ch))
                     self.layout_channel.addWidget(checkbox)
                     self.checkbox_dict[channel] = checkbox
@@ -191,9 +189,7 @@ class MainWindow(QMainWindow):
                     self.layout_res_lbls.itemAt(i).widget().setParent(None)
                 self.mix_time_results_lbls.clear()
                 for channel in self.processor.channels:
-                    match = re.search(r'N\d+', channel)
-                    display_name = match.group() if match else channel
-                    lbl = QLabel(f"{display_name}: -")
+                    lbl = QLabel(f"{channel}: -")
                     self.layout_res_lbls.addWidget(lbl)
                     self.mix_time_results_lbls[channel] = lbl
             else:

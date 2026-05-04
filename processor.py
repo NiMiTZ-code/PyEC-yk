@@ -70,8 +70,6 @@ class DataProcessor:
             file_path = f"{file_path.rstrip('.xlsx')}_{timestamp}.xlsx"
 
             df = self.processed_data.copy()
-            #df['LowerBound'] = 0.95
-            #df['UpperBound'] = 1.05
             
             with pd.ExcelWriter(file_path, engine='xlsxwriter') as writer:
                 df.to_excel(writer, sheet_name='Dane', index=False)

@@ -1,3 +1,4 @@
+import re
 import sys
 import os
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTextBrowser, QStyle,
@@ -20,6 +21,7 @@ class MainWindow(QMainWindow):
         
         self.processor = DataProcessor()
         self.checked_channels = []
+        self.checkbox_dict = {}
 
         # Główny widget i layout
         central_widget = QWidget()
@@ -42,25 +44,8 @@ class MainWindow(QMainWindow):
 
         #Sekcja wyboru kanałów
         group_channel = QGroupBox("Wybór kanałów")
-        layout_channel = QHBoxLayout()
-        self.chbox_channel_one = QCheckBox("Kanał 1")
-        self.chbox_channel_two = QCheckBox("Kanał 2")
-        self.chbox_channel_three = QCheckBox("Kanał 3")
-        self.chbox_channel_four = QCheckBox("Kanał 4")
-        self.chbox_channel_one.toggled.connect(lambda checked: self.add_channel(checked, "N1"))
-        self.chbox_channel_two.toggled.connect(lambda checked: self.add_channel(checked, "N2"))
-        self.chbox_channel_three.toggled.connect(lambda checked: self.add_channel(checked, "N3"))
-        self.chbox_channel_four.toggled.connect(lambda checked: self.add_channel(checked, "N4"))
-        self.chbox_channel_one.setEnabled(False)
-        self.chbox_channel_two.setEnabled(False)
-        self.chbox_channel_three.setEnabled(False)
-        self.chbox_channel_four.setEnabled(False)
-
-        layout_channel.addWidget(self.chbox_channel_one)
-        layout_channel.addWidget(self.chbox_channel_two)
-        layout_channel.addWidget(self.chbox_channel_three)
-        layout_channel.addWidget(self.chbox_channel_four)
-        group_channel.setLayout(layout_channel)
+        self.layout_channel = QHBoxLayout()
+        group_channel.setLayout(self.layout_channel)
 
         #Sekcja ilości pomiarów
         group_meas_num= QGroupBox()
@@ -193,10 +178,18 @@ class MainWindow(QMainWindow):
             
             if success:
                 self.lbl_file_status.setText(f"Wczytany plik: {file_path.split('/')[-1]}")
-                self.chbox_channel_one.setEnabled(True)
-                self.chbox_channel_two.setEnabled(True)
-                self.chbox_channel_three.setEnabled(True)
-                self.chbox_channel_four.setEnabled(True)
+                for i in reversed(range(self.layout_channel.count())):
+                    self.layout_channel.itemAt(i).widget().setParent(None)
+                self.checkbox_dict.clear()
+                self.checked_channels.clear()
+
+                for channel in self.processor.channels:
+                    match = re.search(r'N\d+', channel)
+                    display_name = match.group(0) if match else channel
+                    checkbox = QCheckBox(display_name)
+                    checkbox.toggled.connect(lambda checked, ch=channel: self.add_channel(checked, ch))
+                    self.layout_channel.addWidget(checkbox)
+                    self.checkbox_dict[channel] = checkbox
             else:
                 self.lbl_file_status.setText(message)
 
@@ -300,18 +293,10 @@ class MainWindow(QMainWindow):
         print(mixing_times)
 
     def add_channel(self, checked, channel_name):
-        full_name = next((c for c in self.processor.channels if channel_name in c), None)
-
-        if not full_name:
-            self.lbl_file_status.setText(f"Nie znaleziono kanału zawierającego: {channel_name}")
-            return
-        
-        if checked:
-            if full_name not in self.checked_channels:
-                self.checked_channels.append(full_name)
-        else:
-            if full_name in self.checked_channels:
-                self.checked_channels.remove(full_name)
+        if checked and channel_name not in self.checked_channels:
+            self.checked_channels.append(channel_name)
+        elif not checked and channel_name in self.checked_channels:
+            self.checked_channels.remove(channel_name)
 
     def show_documentation(self):
         self.help_dialog = QDialog(self)

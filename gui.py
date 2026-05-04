@@ -1,6 +1,8 @@
+import re
 import sys
-from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                               QPushButton, QLabel, QFileDialog, QGroupBox, QCheckBox, QLineEdit)
+import os
+from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTextBrowser, QStyle,
+                               QPushButton, QLabel, QFileDialog, QGroupBox, QCheckBox, QLineEdit, QDialog)
 from PySide6.QtCore import Qt
 
 # Importy potrzebne do osadzenia Matplotlib w PySide6
@@ -19,6 +21,8 @@ class MainWindow(QMainWindow):
         
         self.processor = DataProcessor()
         self.checked_channels = []
+        self.checkbox_dict = {}
+        self.mix_time_results_lbls = {}
 
         # Główny widget i layout
         central_widget = QWidget()
@@ -28,7 +32,7 @@ class MainWindow(QMainWindow):
         # --- PANEL LEWY (Sterowanie) ---
         control_panel = QVBoxLayout()
         control_panel.setAlignment(Qt.AlignTop)
-        
+
         # Sekcja Wczytywania
         group_file = QGroupBox("1. Operacje na plikach")
         layout_file = QVBoxLayout()
@@ -41,25 +45,8 @@ class MainWindow(QMainWindow):
 
         #Sekcja wyboru kanałów
         group_channel = QGroupBox("Wybór kanałów")
-        layout_channel = QHBoxLayout()
-        self.chbox_channel_one = QCheckBox("Kanał 1")
-        self.chbox_channel_two = QCheckBox("Kanał 2")
-        self.chbox_channel_three = QCheckBox("Kanał 3")
-        self.chbox_channel_four = QCheckBox("Kanał 4")
-        self.chbox_channel_one.toggled.connect(lambda checked: self.add_channel(checked, "N1"))
-        self.chbox_channel_two.toggled.connect(lambda checked: self.add_channel(checked, "N2"))
-        self.chbox_channel_three.toggled.connect(lambda checked: self.add_channel(checked, "N3"))
-        self.chbox_channel_four.toggled.connect(lambda checked: self.add_channel(checked, "N4"))
-        self.chbox_channel_one.setEnabled(False)
-        self.chbox_channel_two.setEnabled(False)
-        self.chbox_channel_three.setEnabled(False)
-        self.chbox_channel_four.setEnabled(False)
-
-        layout_channel.addWidget(self.chbox_channel_one)
-        layout_channel.addWidget(self.chbox_channel_two)
-        layout_channel.addWidget(self.chbox_channel_three)
-        layout_channel.addWidget(self.chbox_channel_four)
-        group_channel.setLayout(layout_channel)
+        self.layout_channel = QHBoxLayout()
+        group_channel.setLayout(self.layout_channel)
 
         #Sekcja ilości pomiarów
         group_meas_num= QGroupBox()
@@ -77,25 +64,18 @@ class MainWindow(QMainWindow):
         layout_res = QVBoxLayout()
 
         layout_interval = QHBoxLayout()
-        lbl_interval = QLabel("Przedzial o-o-b (ilość pkt przed):")
+        lbl_interval = QLabel("Przedział filtrowania (ilość punktów):")
         self.ibox_interval = QLineEdit()
         self.ibox_interval.setPlaceholderText("Wpisz wartość (np. 20)")
-        self.ibox_interval.setText("20")  # Wpisujemy domyślną wartość na start!
+        self.ibox_interval.setText("1")  # Wpisujemy domyślną wartość na start!
         
         layout_interval.addWidget(lbl_interval)
         layout_interval.addWidget(self.ibox_interval)
-
-        self.lbl_ch_one_res = QLabel("Kanał 1: -")
-        self.lbl_ch_two_res = QLabel("Kanał 2: -")
-        self.lbl_ch_three_res = QLabel("Kanał 3: -")
-        self.lbl_ch_four_res = QLabel("Kanał 4: -")
-        
         layout_res.addLayout(layout_interval)
 
-        layout_res.addWidget(self.lbl_ch_one_res)
-        layout_res.addWidget(self.lbl_ch_two_res)
-        layout_res.addWidget(self.lbl_ch_three_res)
-        layout_res.addWidget(self.lbl_ch_four_res)
+        self.layout_res_lbls = QVBoxLayout()
+        layout_res.addLayout(self.layout_res_lbls)
+
         self.group_res.setLayout(layout_res)
         self.group_res.setVisible(False)
         
@@ -117,12 +97,35 @@ class MainWindow(QMainWindow):
         layout_calc.addWidget(self.btn_find_time)
         group_calc.setLayout(layout_calc)
 
-        
+        #Help footer
+        footer_layout = QHBoxLayout()
+        self.btn_help = QPushButton(" Dokumentacja i Instrukcja Obsługi")
+        self.btn_help.setStyleSheet("""
+            QPushButton {
+                background-color: #4a5b6d;
+                color: white;
+                font-weight: bold;
+                padding: 10px;
+                border-radius: 4px;
+                border: 1px solid #344352;
+            }
+            QPushButton:hover {
+                background-color: #5c7085;
+            }
+            QPushButton:pressed {
+                background-color: #344352;
+            }
+        """)
+        self.btn_help.setIcon(self.style().standardIcon(QStyle.SP_MessageBoxQuestion))
+        self.btn_help.clicked.connect(self.show_documentation)
+        footer_layout.addWidget(self.btn_help)
 
         # Dodanie grup do lewego panelu
         control_panel.addWidget(group_file)
         control_panel.addWidget(group_calc)
         control_panel.addWidget(self.group_res)
+        control_panel.addStretch()
+        control_panel.addLayout(footer_layout)
 
         # --- PANEL PRAWY (Wykres Matplotlib) ---
         layout_plots = QVBoxLayout()
@@ -142,6 +145,10 @@ class MainWindow(QMainWindow):
         self.ax_dimless.set_xlabel("Czas, s")
         self.ax_dimless.set_ylabel("Stężenie bezwymiarowe C_b")
         self.ax_dimless.grid(True)
+
+        self.zoom = zoom_factory(self.ax_dimless)
+        self.ph = panhandler(self.figure_dimless, button=2)
+        self.dimless_cursor = None
 
         layout_plots.addWidget(self.canvas)
         layout_plots.addWidget(self.canvas_dimless)
@@ -165,12 +172,32 @@ class MainWindow(QMainWindow):
             
             if success:
                 self.lbl_file_status.setText(f"Wczytany plik: {file_path.split('/')[-1]}")
-                self.chbox_channel_one.setEnabled(True)
-                self.chbox_channel_two.setEnabled(True)
-                self.chbox_channel_three.setEnabled(True)
-                self.chbox_channel_four.setEnabled(True)
+                for i in reversed(range(self.layout_channel.count())):
+                    self.layout_channel.itemAt(i).widget().setParent(None)
+                self.checkbox_dict.clear()
+                self.checked_channels.clear()
+
+                for channel in self.processor.channels:
+                    match = re.search(r'N\d+', channel)
+                    display_name = match.group() if match else channel
+                    checkbox = QCheckBox(display_name)
+                    checkbox.toggled.connect(lambda checked, ch=channel: self.add_channel(checked, ch))
+                    self.layout_channel.addWidget(checkbox)
+                    self.checkbox_dict[channel] = checkbox
+                
+                #results labels
+                for i in reversed(range(self.layout_res_lbls.count())):
+                    self.layout_res_lbls.itemAt(i).widget().setParent(None)
+                self.mix_time_results_lbls.clear()
+                for channel in self.processor.channels:
+                    match = re.search(r'N\d+', channel)
+                    display_name = match.group() if match else channel
+                    lbl = QLabel(f"{display_name}: -")
+                    self.layout_res_lbls.addWidget(lbl)
+                    self.mix_time_results_lbls[channel] = lbl
             else:
                 self.lbl_file_status.setText(message)
+
 
     def plot_data(self):
         try:
@@ -199,9 +226,11 @@ class MainWindow(QMainWindow):
             self.ax_dimless.set_ylabel("Stężenie bezwymiarowe C_b")
             self.ax_dimless.legend()
             self.ax_dimless.grid(True)
+            if self.dimless_cursor is not None:
+                self.dimless_cursor.remove()
 
-            cursor = mplcursors.cursor(self.ax_dimless.get_lines(), hover=True)
-            @cursor.connect("add")
+            self.dimless_cursor = mplcursors.cursor(self.ax_dimless.get_lines(), hover=True)
+            @self.dimless_cursor.connect("add")
             def on_add(sel):
                 idx = int(round(sel.index))
                 x_val, y_val = sel.artist.get_data()
@@ -210,9 +239,6 @@ class MainWindow(QMainWindow):
                 sel.annotation.xy = (x_val, y_val)
                 sel.annotation.set_text(f"Czas: {x_val:.1f} s\nC_b: {y_val:.3f}")
                 sel.annotation.get_bbox_patch().set(fc="white", alpha=0.9, edgecolor="black")
-
-            self.zoom = zoom_factory(self.ax_dimless)
-            self.ph = panhandler(self.figure_dimless, button=2)
             
             self.canvas_dimless.draw()
 
@@ -240,6 +266,8 @@ class MainWindow(QMainWindow):
             return
         
         self.plot_processed_data(x_pts)
+        if self.chbox_plot_limits.isChecked():
+            self.chbox_plot_limits.setChecked(False)
         
     def on_find_time_clicked(self):
 
@@ -251,35 +279,45 @@ class MainWindow(QMainWindow):
             self.ibox_interval.setText("1")
 
         mixing_times = self.processor.find_mixing_time(x_filtering_pts=x_pts)
-        label_map = {
-            next((c for c in self.processor.channels if "N1" in c), None): self.lbl_ch_one_res,
-            next((c for c in self.processor.channels if "N2" in c), None): self.lbl_ch_two_res,
-            next((c for c in self.processor.channels if "N3" in c), None): self.lbl_ch_three_res,
-            next((c for c in self.processor.channels if "N4" in c), None): self.lbl_ch_four_res,
-        }
-        for ch, label in label_map.items():
+        
+        for ch, label in self.mix_time_results_lbls.items():
             if ch not in mixing_times:
-                label.setText(f"{ch}: brak danych")
+                label.setText(f"{ch}: Brak danych")
             else:
-                t = mixing_times[ch]
-            if t is None:
-                label.setText(f"{ch}: nie osiągnięto zakresu")
-            else:
-                label.setText(f"{ch}: {t:.2f} s")
+                mt = mixing_times[ch]
+                if mt is None:
+                    label.setText(f"{ch}: Nie osiągnięto pełnego wymieszania")
+                else:
+                    label.setText(f"{ch}: {mt:.2f} s")
+
 
         self.group_res.setVisible(True)
         print(mixing_times)
 
     def add_channel(self, checked, channel_name):
-        full_name = next((c for c in self.processor.channels if channel_name in c), None)
+        if checked and channel_name not in self.checked_channels:
+            self.checked_channels.append(channel_name)
+        elif not checked and channel_name in self.checked_channels:
+            self.checked_channels.remove(channel_name)
 
-        if not full_name:
-            self.lbl_file_status.setText(f"Nie znaleziono kanału zawierającego: {channel_name}")
-            return
-        
-        if checked:
-            if full_name not in self.checked_channels:
-                self.checked_channels.append(full_name)
-        else:
-            if full_name in self.checked_channels:
-                self.checked_channels.remove(full_name)
+    def show_documentation(self):
+        self.help_dialog = QDialog(self)
+        self.help_dialog.setWindowTitle("Dokumentacja | Instrukcja obsługi")
+        self.help_dialog.resize(650, 600)
+
+        layout = QVBoxLayout(self.help_dialog)
+
+        browser = QTextBrowser()
+        browser.setOpenExternalLinks(True)
+        doc_path = os.path.join(os.path.dirname(__file__), "docs", "docs.html")
+
+        try:
+            with open(doc_path, 'r', encoding='utf-8') as file:
+                html_content = file.read()
+                browser.setHtml(html_content)
+        except FileNotFoundError:
+            browser.setHtml("<h2 style='color:red;'>Błąd 404</h2><p>Nie znaleziono pliku <b>docs.html</b> w folderze z aplikacją.</p>")
+        except Exception as e:
+            browser.setHtml(f"<h2 style='color:red;'>Błąd odczytu</h2><p>{str(e)}</p>")
+        layout.addWidget(browser)
+        self.help_dialog.show()

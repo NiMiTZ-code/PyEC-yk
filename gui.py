@@ -4,6 +4,7 @@ import os
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTextBrowser, QStyle,
                                QPushButton, QLabel, QFileDialog, QGroupBox, QCheckBox, QLineEdit, QDialog)
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QPalette, QColor
 
 # Importy potrzebne do osadzenia Matplotlib w PySide6
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -279,8 +280,13 @@ class MainWindow(QMainWindow):
             self.ibox_interval.setText("1")
 
         mixing_times = self.processor.find_mixing_time(x_filtering_pts=x_pts)
+        valid_times = [t for t in mixing_times.values() if t is not None]
         
+        max_time = max(valid_times) if valid_times else None
+
         for ch, label in self.mix_time_results_lbls.items():
+            label.setPalette(QPalette())
+            label.setAutoFillBackground(False)
             if ch not in mixing_times:
                 label.setText(f"{ch}: Brak danych")
             else:
@@ -289,6 +295,13 @@ class MainWindow(QMainWindow):
                     label.setText(f"{ch}: Nie osiągnięto pełnego wymieszania")
                 else:
                     label.setText(f"{ch}: {mt:.2f} s")
+                    pallette = label.palette()
+                    if len(valid_times) > 1:
+                        if mt == max_time:
+                            pallette.setColor(QPalette.Window, QColor(168,151,50))
+                        
+                        label.setPalette(pallette)
+                        label.setAutoFillBackground(True)
 
 
         self.group_res.setVisible(True)

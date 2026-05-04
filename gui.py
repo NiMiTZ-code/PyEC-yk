@@ -98,6 +98,15 @@ class MainWindow(QMainWindow):
         layout_calc.addWidget(self.btn_find_time)
         group_calc.setLayout(layout_calc)
 
+        #Export
+        self.btn_export = QPushButton("Eksportuj wyniki do Excel")
+        self.btn_export.clicked.connect(self.export_to_excel)
+        group_export = QGroupBox("3. Export wyników")
+        layout_export = QVBoxLayout()
+        layout_export.addWidget(self.btn_export)
+        group_export.setLayout(layout_export)
+        
+
         #Help footer
         footer_layout = QHBoxLayout()
         self.btn_help = QPushButton(" Dokumentacja i Instrukcja Obsługi")
@@ -125,8 +134,10 @@ class MainWindow(QMainWindow):
         control_panel.addWidget(group_file)
         control_panel.addWidget(group_calc)
         control_panel.addWidget(self.group_res)
+        control_panel.addWidget(group_export)
         control_panel.addStretch()
         control_panel.addLayout(footer_layout)
+        
 
         # --- PANEL PRAWY (Wykres Matplotlib) ---
         layout_plots = QVBoxLayout()
@@ -330,3 +341,16 @@ class MainWindow(QMainWindow):
             browser.setHtml(f"<h2 style='color:red;'>Błąd odczytu</h2><p>{str(e)}</p>")
         layout.addWidget(browser)
         self.help_dialog.show()
+
+    def export_to_excel(self):
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Zapisz plik Excel",
+            "wyniki.xlsx",
+            "Pliki Excel (*.xlsx)"
+        )
+
+        if not file_path:
+            return
+
+        success, message = self.processor.export_excel(file_path)

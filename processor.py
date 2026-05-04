@@ -70,7 +70,7 @@ class DataProcessor:
         except Exception as e:
             return False, f"Błąd podczas eksportowania danych: {str(e)}"
         
-    def export_excel(self, file_path):
+    def export_excel(self, file_path="wyniki.xlsx"):
         if self.processed_data is None:
             raise ValueError("Brak przetworzonych danych do eksportu. Najpierw oblicz C_b.")
         try:
@@ -123,7 +123,7 @@ class DataProcessor:
                     'marker':     {'type': 'none'},
                     'line':       {'color': 'red', 'width': 1.0, 'dash_type': 'dash'}
                 })
-                chart.set_title({'name': 'Przewodność bezwymiarowa C_b'})
+                chart.set_title({'name': 'Stężenie bezwymiarowe C_b'})
                 chart.set_x_axis({'name': 'Czas [s]'})
                 chart.set_y_axis({'name': 'C_b', 'major_gridlines': {'visible': True}})
                 chart.set_legend({'position': 'bottom'})
@@ -234,12 +234,6 @@ class DataProcessor:
                 mixing_time = self.processed_data['Czas [s]'].iloc[0]
             
             mixing_times[channel] = mixing_time
-
-
-        #DEBUG
-        #self.export_data("processed_data_debug_d.csv")
-        self.export_excel("wyniki.xlsx")
-
 
         return mixing_times
     

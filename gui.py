@@ -1,6 +1,7 @@
 import sys
-from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                               QPushButton, QLabel, QFileDialog, QGroupBox, QCheckBox, QLineEdit)
+import os
+from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTextBrowser, QStyle,
+                               QPushButton, QLabel, QFileDialog, QGroupBox, QCheckBox, QLineEdit, QDialog)
 from PySide6.QtCore import Qt
 
 # Importy potrzebne do osadzenia Matplotlib w PySide6
@@ -28,7 +29,7 @@ class MainWindow(QMainWindow):
         # --- PANEL LEWY (Sterowanie) ---
         control_panel = QVBoxLayout()
         control_panel.setAlignment(Qt.AlignTop)
-        
+
         # Sekcja Wczytywania
         group_file = QGroupBox("1. Operacje na plikach")
         layout_file = QVBoxLayout()
@@ -117,12 +118,35 @@ class MainWindow(QMainWindow):
         layout_calc.addWidget(self.btn_find_time)
         group_calc.setLayout(layout_calc)
 
-        
+        #Help footer
+        footer_layout = QHBoxLayout()
+        self.btn_help = QPushButton(" Dokumentacja i Instrukcja Obsługi")
+        self.btn_help.setStyleSheet("""
+            QPushButton {
+                background-color: #4a5b6d;
+                color: white;
+                font-weight: bold;
+                padding: 10px;
+                border-radius: 4px;
+                border: 1px solid #344352;
+            }
+            QPushButton:hover {
+                background-color: #5c7085;
+            }
+            QPushButton:pressed {
+                background-color: #344352;
+            }
+        """)
+        self.btn_help.setIcon(self.style().standardIcon(QStyle.SP_MessageBoxQuestion))
+        self.btn_help.clicked.connect(self.show_documentation)
+        footer_layout.addWidget(self.btn_help)
 
         # Dodanie grup do lewego panelu
         control_panel.addWidget(group_file)
         control_panel.addWidget(group_calc)
         control_panel.addWidget(self.group_res)
+        control_panel.addStretch()
+        control_panel.addLayout(footer_layout)
 
         # --- PANEL PRAWY (Wykres Matplotlib) ---
         layout_plots = QVBoxLayout()
@@ -142,6 +166,10 @@ class MainWindow(QMainWindow):
         self.ax_dimless.set_xlabel("Czas, s")
         self.ax_dimless.set_ylabel("Stężenie bezwymiarowe C_b")
         self.ax_dimless.grid(True)
+
+        self.zoom = zoom_factory(self.ax_dimless)
+        self.ph = panhandler(self.figure_dimless, button=2)
+        self.dimless_cursor = None
 
         layout_plots.addWidget(self.canvas)
         layout_plots.addWidget(self.canvas_dimless)
@@ -199,9 +227,11 @@ class MainWindow(QMainWindow):
             self.ax_dimless.set_ylabel("Stężenie bezwymiarowe C_b")
             self.ax_dimless.legend()
             self.ax_dimless.grid(True)
+            if self.dimless_cursor is not None:
+                self.dimless_cursor.remove()
 
-            cursor = mplcursors.cursor(self.ax_dimless.get_lines(), hover=True)
-            @cursor.connect("add")
+            self.dimless_cursor = mplcursors.cursor(self.ax_dimless.get_lines(), hover=True)
+            @self.dimless_cursor.connect("add")
             def on_add(sel):
                 idx = int(round(sel.index))
                 x_val, y_val = sel.artist.get_data()
@@ -210,9 +240,6 @@ class MainWindow(QMainWindow):
                 sel.annotation.xy = (x_val, y_val)
                 sel.annotation.set_text(f"Czas: {x_val:.1f} s\nC_b: {y_val:.3f}")
                 sel.annotation.get_bbox_patch().set(fc="white", alpha=0.9, edgecolor="black")
-
-            self.zoom = zoom_factory(self.ax_dimless)
-            self.ph = panhandler(self.figure_dimless, button=2)
             
             self.canvas_dimless.draw()
 
@@ -240,6 +267,8 @@ class MainWindow(QMainWindow):
             return
         
         self.plot_processed_data(x_pts)
+        if self.chbox_plot_limits.isChecked():
+            self.chbox_plot_limits.setChecked(False)
         
     def on_find_time_clicked(self):
 
@@ -283,3 +312,25 @@ class MainWindow(QMainWindow):
         else:
             if full_name in self.checked_channels:
                 self.checked_channels.remove(full_name)
+
+    def show_documentation(self):
+        self.help_dialog = QDialog(self)
+        self.help_dialog.setWindowTitle("Dokumentacja | Instrukcja obsługi")
+        self.help_dialog.resize(650, 600)
+
+        layout = QVBoxLayout(self.help_dialog)
+
+        browser = QTextBrowser()
+        browser.setOpenExternalLinks(True)
+        doc_path = os.path.join(os.path.dirname(__file__), "docs", "docs.html")
+
+        try:
+            with open(doc_path, 'r', encoding='utf-8') as file:
+                html_content = file.read()
+                browser.setHtml(html_content)
+        except FileNotFoundError:
+            browser.setHtml("<h2 style='color:red;'>Błąd 404</h2><p>Nie znaleziono pliku <b>docs.html</b> w folderze z aplikacją.</p>")
+        except Exception as e:
+            browser.setHtml(f"<h2 style='color:red;'>Błąd odczytu</h2><p>{str(e)}</p>")
+        layout.addWidget(browser)
+        self.help_dialog.show()

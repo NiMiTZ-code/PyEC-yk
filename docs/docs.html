@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333333;
+            line-height: 1.6;
+            margin: 15px;
+        }
+        h2 {
+            color: #004499;
+            border-bottom: 2px solid #004499;
+            padding-bottom: 5px;
+            margin-top: 0;
+        }
+        h3 {
+            color: #0055cc;
+            margin-bottom: 5px;
+        }
+        ul, ol {
+            margin-top: 5px;
+        }
+        li {
+            margin-bottom: 12px;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: Consolas, monospace;
+            color: #d63384;
+        }
+        .highlight {
+            background-color: #e6f2ff;
+            padding: 10px;
+            border-left: 4px solid #0066cc;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Instrukcja obsługi aplikacji PK</h2>
+    <p>Aplikacja służy do analizy krzywych mieszania na podstawie danych z konduktometrów. Poniżej znajduje się opis poszczególnych kroków analizy.</p>
+
+    <h3>1. Wczytywanie i przygotowanie danych</h3>
+    <ol>
+        <li><b>Wczytywanie:</b> Kliknij przycisk "Wczytaj plik .csv" i wybierz plik z surowymi danymi pomiarowymi. Aplikacja automatycznie dopasuje czas.</li>
+        <li><b>Wybór kanałów:</b> Zaznacz interesujące Cię kanały (N1 - Nx), które chcesz poddać analizie na wykresach.</li>
+    </ol>
+
+    <h3>2. Analiza i obliczenia</h3>
+    <ol>
+        <li><b>Wykres przewodności:</b> Pokazuje surowe dane wprost z urządzenia.</li>
+        <li><b>Ilość pomiarów (Opcjonalnie):</b> Podaj ilość <i>ostatnich</i> pomiarów, z których algorytm wyciągnie średnią do obliczenia stężenia końcowego (C<sub>∞</sub>). Jeśli pole pozostanie puste, użyty zostanie tylko i wyłącznie ostatni punkt z pliku.</li>
+        <li><b>Obliczanie C<sub>b</sub>:</b> Kliknij <i>Przelicz i rysuj</i>, aby wyliczyć bezwymiarowe stężenie dla każdego kanału i znormalizować wykresy do wartości 1.0.</li>
+    </ol>
+
+    <h3>3. Nawigacja po wykresie stężenia bezwymiarowego</h3>
+    <ul>
+        <li><b>Zoom (Przybliżanie):</b> Użyj <i>kółka myszy</i> nad interesującym Cię obszarem wykresu.</li>
+        <li><b>Przesuwanie (Pan):</b> Wciśnij i przytrzymaj <i>środkowy przycisk myszy</i> (kółko), a następnie poruszaj myszką, aby przesuwać powiększony wykres.</li>
+        <li><b>Inspekcja punktów:</b> Najedź kursorem myszy na narysowaną linię. Pojawi się okienko (tooltip) z precyzyjnym odczytem czasu i wartości w danym węźle pomiarowym.</li>
+        <li><b>Dodawanie granic do wykresu:</b> Zaznacz opcję "Dodaj granice 0.95 - 1.05", aby wyświetlić granice tolerancji na wykresie.
+        <div class="highlight">
+            Po ponownym przeliczeniu wykresu należy ponownie zaznaczyć tę opcję, aby wyświetlić granice
+        </div></li>
+    </ul>
+
+    <h3>4. Wyznaczanie czasu mieszania</h3>
+    <p>Aby odczytać czas mieszania, kliknij przycisk "Odczytaj czas mieszania". Wyświetlą się wyniki dla wszystkich kanałów.</p>
+    <div class="highlight">
+        <b>Zasada działania:</b> Algorytm poszukuje momentu, po którym wykres stężenia C<sub>b</sub> ostatecznie wchodzi w przedział tolerancji (np. 0.95 - 1.05) i już z niego nie wychodzi.
+    </div>
+    <ul>
+        <li><b>Przedział o-o-b (Filtr szumów):</b> Wpisz ilość punktów dla kroczącego okna filtrującego. Określa to, ile punktów <i>poza zakresem</i> (out-of-bounds) musi wystąpić bezpośrednio po sobie, aby algorytm uznał to za faktyczne zakłócenie, a nie pojedynczy szum z czujnika.</li>
+        <li>Algorytm przyjmie wartość czasu mieszania jako punkt następujący po zdefiniowanym przedziale i pierwszy, który znajduje się w granicach tolerancji. </li>
+        <li>Wyniki wyświetlą się bezpośrednio pod polem wpisywania w sekcji wyników.</li>
+    </ul>
+
+</body>
+</html>

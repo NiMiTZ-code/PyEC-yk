@@ -167,6 +167,10 @@ class MainWindow(QMainWindow):
         self.ax_dimless.set_ylabel("Stężenie bezwymiarowe C_b")
         self.ax_dimless.grid(True)
 
+        self.zoom = zoom_factory(self.ax_dimless)
+        self.ph = panhandler(self.figure_dimless, button=2)
+        self.dimless_cursor = None
+
         layout_plots.addWidget(self.canvas)
         layout_plots.addWidget(self.canvas_dimless)
 
@@ -223,9 +227,11 @@ class MainWindow(QMainWindow):
             self.ax_dimless.set_ylabel("Stężenie bezwymiarowe C_b")
             self.ax_dimless.legend()
             self.ax_dimless.grid(True)
+            if self.dimless_cursor is not None:
+                self.dimless_cursor.remove()
 
-            cursor = mplcursors.cursor(self.ax_dimless.get_lines(), hover=True)
-            @cursor.connect("add")
+            self.dimless_cursor = mplcursors.cursor(self.ax_dimless.get_lines(), hover=True)
+            @self.dimless_cursor.connect("add")
             def on_add(sel):
                 idx = int(round(sel.index))
                 x_val, y_val = sel.artist.get_data()
@@ -234,9 +240,6 @@ class MainWindow(QMainWindow):
                 sel.annotation.xy = (x_val, y_val)
                 sel.annotation.set_text(f"Czas: {x_val:.1f} s\nC_b: {y_val:.3f}")
                 sel.annotation.get_bbox_patch().set(fc="white", alpha=0.9, edgecolor="black")
-
-            self.zoom = zoom_factory(self.ax_dimless)
-            self.ph = panhandler(self.figure_dimless, button=2)
             
             self.canvas_dimless.draw()
 

@@ -1,6 +1,6 @@
 import sys
 import os
-from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTextBrowser,
+from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTextBrowser, QStyle,
                                QPushButton, QLabel, QFileDialog, QGroupBox, QCheckBox, QLineEdit, QDialog)
 from PySide6.QtCore import Qt
 
@@ -29,12 +29,6 @@ class MainWindow(QMainWindow):
         # --- PANEL LEWY (Sterowanie) ---
         control_panel = QVBoxLayout()
         control_panel.setAlignment(Qt.AlignTop)
-
-
-        footer_layout = QHBoxLayout()
-        self.btn_help = QPushButton("Dokumentacja i Instrukcja Obsługi")
-        self.btn_help.clicked.connect(self.show_documentation)
-        footer_layout.addWidget(self.btn_help)
 
         # Sekcja Wczytywania
         group_file = QGroupBox("1. Operacje na plikach")
@@ -124,10 +118,34 @@ class MainWindow(QMainWindow):
         layout_calc.addWidget(self.btn_find_time)
         group_calc.setLayout(layout_calc)
 
+        #Help footer
+        footer_layout = QHBoxLayout()
+        self.btn_help = QPushButton(" Dokumentacja i Instrukcja Obsługi")
+        self.btn_help.setStyleSheet("""
+            QPushButton {
+                background-color: #4a5b6d;
+                color: white;
+                font-weight: bold;
+                padding: 10px;
+                border-radius: 4px;
+                border: 1px solid #344352;
+            }
+            QPushButton:hover {
+                background-color: #5c7085;
+            }
+            QPushButton:pressed {
+                background-color: #344352;
+            }
+        """)
+        self.btn_help.setIcon(self.style().standardIcon(QStyle.SP_MessageBoxQuestion))
+        self.btn_help.clicked.connect(self.show_documentation)
+        footer_layout.addWidget(self.btn_help)
+
         # Dodanie grup do lewego panelu
         control_panel.addWidget(group_file)
         control_panel.addWidget(group_calc)
         control_panel.addWidget(self.group_res)
+        control_panel.addStretch()
         control_panel.addLayout(footer_layout)
 
         # --- PANEL PRAWY (Wykres Matplotlib) ---

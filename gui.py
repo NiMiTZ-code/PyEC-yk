@@ -20,6 +20,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Analiza Krzywych Mieszania PK")
         self.resize(1000, 600)
         
+        
         self.processor = DataProcessor()
         self.checked_channels = []
         self.checkbox_dict = {}
@@ -110,22 +111,6 @@ class MainWindow(QMainWindow):
         #Help footer
         footer_layout = QHBoxLayout()
         self.btn_help = QPushButton(" Dokumentacja i Instrukcja Obsługi")
-        self.btn_help.setStyleSheet("""
-            QPushButton {
-                background-color: #4a5b6d;
-                color: white;
-                font-weight: bold;
-                padding: 10px;
-                border-radius: 4px;
-                border: 1px solid #344352;
-            }
-            QPushButton:hover {
-                background-color: #5c7085;
-            }
-            QPushButton:pressed {
-                background-color: #344352;
-            }
-        """)
         self.btn_help.setIcon(self.style().standardIcon(QStyle.SP_MessageBoxQuestion))
         self.btn_help.clicked.connect(self.show_documentation)
         footer_layout.addWidget(self.btn_help)
@@ -172,6 +157,12 @@ class MainWindow(QMainWindow):
         # Złożenie całości (rozciągnięcie wykresu proporcją stretch)
         main_layout.addLayout(control_panel, stretch=1)
         main_layout.addLayout(layout_plots, stretch=3)
+        self.load_stylesheet("style.qss")
+
+    def load_stylesheet(self, path):
+        with open(path, "r") as f:
+            style = f.read()
+            self.setStyleSheet(style)
 
     def load_file(self):
         # Okno dialogowe wyboru pliku

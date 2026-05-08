@@ -1,3 +1,6 @@
+QWidget {
+    font-size: 13px;
+}
 QPushButton {
     background-color: #4a5b6d;
     color: white;
@@ -11,4 +14,8 @@ QPushButton:hover {
 }
 QPushButton:pressed {
     background-color: #344352;
+}
+QPushButton:disabled {
+    background-color: #13191f;
+    color: gray;
 }

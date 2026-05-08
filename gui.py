@@ -1,7 +1,7 @@
 import re
 import sys
 import os
-from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTextBrowser, QStyle,
+from PySide6.QtWidgets import (QMainWindow, QSizePolicy, QWidget, QVBoxLayout, QHBoxLayout, QTextBrowser, QStyle,
                                QPushButton, QLabel, QFileDialog, QGroupBox, QCheckBox, QLineEdit, QDialog)
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPalette, QColor
@@ -34,6 +34,9 @@ class MainWindow(QMainWindow):
         # --- PANEL LEWY (Sterowanie) ---
         control_panel = QVBoxLayout()
         control_panel.setAlignment(Qt.AlignTop)
+        control_widget = QWidget()
+        control_widget.setLayout(control_panel)
+        control_widget.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
 
         # Sekcja Wczytywania
         group_file = QGroupBox("1. Operacje na plikach")
@@ -86,10 +89,14 @@ class MainWindow(QMainWindow):
         layout_calc = QVBoxLayout()
         self.btn_plot_raw = QPushButton("Rysuj wykres przewodności")
         self.btn_plot_raw.clicked.connect(self.plot_data)
+        self.btn_plot_raw.setDisabled(True)
         self.btn_calculate = QPushButton("Przelicz i rysuj wykres (Stężenie bezwymiarowe)")
+        self.btn_calculate.setDisabled(True)
         self.chbox_plot_limits = QCheckBox("Dodaj granice 0.95 - 1.05")
+        self.chbox_plot_limits.setDisabled(True)
         self.chbox_plot_limits.toggled.connect(self.on_plot_limits_toggled)
         self.btn_find_time = QPushButton("Odczytaj czas mieszania")
+        self.btn_find_time.setDisabled(True)
         
         layout_calc.addWidget(group_channel)
         layout_calc.addWidget(self.btn_plot_raw)
@@ -101,6 +108,7 @@ class MainWindow(QMainWindow):
 
         #Export
         self.btn_export = QPushButton("Eksportuj wyniki do Excel")
+        self.btn_export.setDisabled(True)
         self.btn_export.clicked.connect(self.export_to_excel)
         group_export = QGroupBox("3. Export wyników")
         layout_export = QVBoxLayout()
@@ -155,7 +163,7 @@ class MainWindow(QMainWindow):
         self.btn_find_time.clicked.connect(self.on_find_time_clicked)
 
         # Złożenie całości (rozciągnięcie wykresu proporcją stretch)
-        main_layout.addLayout(control_panel, stretch=1)
+        main_layout.addWidget(control_widget, stretch=1)
         main_layout.addLayout(layout_plots, stretch=3)
         self.load_stylesheet("style.qss")
 
@@ -194,6 +202,8 @@ class MainWindow(QMainWindow):
                     lbl = QLabel(f"{channel}: -")
                     self.layout_res_lbls.addWidget(lbl)
                     self.mix_time_results_lbls[channel] = lbl
+                self.btn_plot_raw.setDisabled(False)
+                self.btn_calculate.setDisabled(False)
             else:
                 self.lbl_file_status.setText(message)
 
@@ -246,8 +256,8 @@ class MainWindow(QMainWindow):
 
     def on_plot_limits_toggled(self, checked):
         if checked:
-            self.ax_dimless.axhline(0.95, color='red', linestyle='--')
-            self.ax_dimless.axhline(1.05, color='red', linestyle='--')
+            self.ax_dimless.axhline(0.95, color='red', linestyle='--', label='Granica 0.95')
+            self.ax_dimless.axhline(1.05, color='red', linestyle='--', label='Granica 1.05')
         else:
             lines = self.ax_dimless.get_lines()
             for line in lines:
@@ -265,6 +275,8 @@ class MainWindow(QMainWindow):
             return
         
         self.plot_processed_data(x_pts)
+        self.btn_find_time.setDisabled(False)
+        self.chbox_plot_limits.setDisabled(False)
         if self.chbox_plot_limits.isChecked():
             self.chbox_plot_limits.setChecked(False)
         
@@ -303,6 +315,7 @@ class MainWindow(QMainWindow):
 
 
         self.group_res.setVisible(True)
+        self.btn_export.setDisabled(False)
         print(mixing_times)
 
     def add_channel(self, checked, channel_name):

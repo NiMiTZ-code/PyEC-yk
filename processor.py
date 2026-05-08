@@ -11,6 +11,8 @@ class DataProcessor:
         self.channels = []
         self.processed_data = None
 
+        self.mixing_times = {}
+
 
     def load_csv(self, file_path):
         try:
@@ -61,19 +63,21 @@ class DataProcessor:
         except Exception as e:
             return False, f"Błąd podczas wczytywania pliku: {str(e)}"
     
-    def export_data(self, file_path):
-        if self.processed_data is None:
-            raise ValueError("Brak przetworzonych danych do eksportu. Najpierw oblicz C_b.")
-        try:
-            self.processed_data.to_csv(file_path, index=False, sep=';', decimal=',', encoding='utf-8')
-            return True, f"Pomyślnie wyeksportowano dane do: {file_path}"
-        except Exception as e:
-            return False, f"Błąd podczas eksportowania danych: {str(e)}"
+    # def export_data(self, file_path):
+    #     if self.processed_data is None:
+    #         raise ValueError("Brak przetworzonych danych do eksportu. Najpierw oblicz C_b.")
+    #     try:
+    #         self.processed_data.to_csv(file_path, index=False, sep=';', decimal=',', encoding='utf-8')
+    #         return True, f"Pomyślnie wyeksportowano dane do: {file_path}"
+    #     except Exception as e:
+    #         return False, f"Błąd podczas eksportowania danych: {str(e)}"
         
     def export_excel(self, file_path="wyniki.xlsx"):
+        #Sprawdzenie czy istnieją dane przetworzone
         if self.processed_data is None:
             raise ValueError("Brak przetworzonych danych do eksportu. Najpierw oblicz C_b.")
         try:
+            #Dodanie timestampu do nazwy pliku, aby uniknąć nadpisywania
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             file_path = f"{file_path.rstrip('.xlsx')}_{timestamp}.xlsx"
 
@@ -103,7 +107,6 @@ class DataProcessor:
                 x_min = float(df['Czas [s]'].min())
                 x_max = float(df['Czas [s]'].max())
 
-
                 # --- LINIA 0.95 ---
                 #lb_col = df.columns.get_loc('LowerBound')
                 chart.add_series({
@@ -128,6 +131,32 @@ class DataProcessor:
                 chart.set_y_axis({'name': 'C_b', 'major_gridlines': {'visible': True}})
                 chart.set_legend({'position': 'bottom'})
                 worksheet.insert_chart('G2', chart, {'x_scale': 1.5, 'y_scale': 1.5})
+
+                start_row = 2
+                col_channel = 18
+                col_time = 19
+
+                # --- TABELA Z CZASAMI MIESZANIA ---
+                worksheet.write(start_row -1, col_channel, "Kanał")
+                worksheet.write(start_row -1, col_time, "Czas mieszania [s]")
+
+                for i, (channel, mix_time) in enumerate(self.mixing_times.items(), start=start_row):
+                    worksheet.write(i, col_channel, channel)
+                    worksheet.write(i, col_time, mix_time if mix_time is not None else "Brak czasu mieszania")
+                
+                # --- FORMATOWANIE: podświetlenie najwyższego czasu mieszania ---
+                valid_mix_times = {ch: t for ch, t in self.mixing_times.items() if t is not None}
+                
+                if valid_mix_times:
+                    max_time = max(valid_mix_times.values())
+                    highlight = workbook.add_format({
+                        'bg_color': '#FFD966',
+                        'bold': True
+                    })
+                for i, (channel, time_val) in enumerate(self.mixing_times.items(), start=start_row):
+                    if time_val == max_time:
+                        worksheet.write(i, col_time, time_val, highlight)
+                
             return True, f"Pomyślnie wyeksportowano dane do: {file_path}"
         except Exception as e:
             return False, f"Błąd podczas eksportowania danych: {str(e)}"
@@ -234,6 +263,7 @@ class DataProcessor:
                 mixing_time = self.processed_data['Czas [s]'].iloc[0]
             
             mixing_times[channel] = mixing_time
+            self.mixing_times = mixing_times
 
         return mixing_times
     

@@ -136,18 +136,11 @@ class MainWindow(QMainWindow):
         self.figure = Figure()
         self.canvas = FigureCanvas(self.figure)
         self.ax = self.figure.add_subplot(111)
-        self.ax.set_title("Oczekuję na dane...")
-        self.ax.set_xlabel("Czas, s")
-        self.ax.set_ylabel("Przewodność / Stężenie")
-        self.ax.grid(True)
 
         self.figure_dimless = Figure()
         self.canvas_dimless = FigureCanvas(self.figure_dimless)
         self.ax_dimless = self.figure_dimless.add_subplot(111)
-        self.ax_dimless.set_title("Oczekuję na dane...")
-        self.ax_dimless.set_xlabel("Czas, s")
-        self.ax_dimless.set_ylabel("Stężenie bezwymiarowe C_b")
-        self.ax_dimless.grid(True)
+        
 
         self.zoom = zoom_factory(self.ax_dimless)
         self.ph = panhandler(self.figure_dimless, button=2)
@@ -165,6 +158,7 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(control_widget, stretch=1)
         main_layout.addLayout(layout_plots, stretch=3)
         self.load_stylesheet("style.qss")
+        self.prepare_charts()
 
     # --- ładowanie stylów ---
     def load_stylesheet(self, path):
@@ -172,7 +166,18 @@ class MainWindow(QMainWindow):
             style = f.read()
             self.setStyleSheet(style)
 
-    
+    def prepare_charts(self):
+        self.ax.clear()
+        self.ax.set_title("Oczekuję na dane...")
+        self.ax.set_xlabel("Czas, s")
+        self.ax.set_ylabel("Przewodność / Stężenie")
+        self.ax.grid(True)
+
+        self.ax_dimless.clear()
+        self.ax_dimless.set_title("Oczekuję na dane...")
+        self.ax_dimless.set_xlabel("Czas, s")
+        self.ax_dimless.set_ylabel("Stężenie bezwymiarowe C_b")
+        self.ax_dimless.grid(True)
 
     # --- Wczytanie danych z pliku ---
     def load_file(self):
@@ -185,6 +190,10 @@ class MainWindow(QMainWindow):
             success, message = self.processor.load_csv(file_path)
             
             if success:
+                self.prepare_charts()
+                if self.chbox_plot_limits.isChecked():
+                    self.chbox_plot_limits.setChecked(False)
+                    
                 self.lbl_file_status.setText(f"Wczytany plik: {file_path.split('/')[-1]}")
                 for i in reversed(range(self.layout_channel.count())):
                     self.layout_channel.itemAt(i).widget().setParent(None)
@@ -207,8 +216,6 @@ class MainWindow(QMainWindow):
                     self.mix_time_results_lbls[channel] = lbl
                 self.btn_plot_raw.setDisabled(False)
                 self.btn_calculate.setDisabled(False)
-                self.ax.clear()
-                self.ax_dimless.clear()
             else:
                 self.lbl_file_status.setText(message)
 

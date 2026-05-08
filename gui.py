@@ -42,7 +42,6 @@ class MainWindow(QMainWindow):
         group_file = QGroupBox("1. Operacje na plikach")
         layout_file = QVBoxLayout()
         self.btn_load = QPushButton("Wczytaj plik .csv")
-        self.btn_load.clicked.connect(self.load_file)
         self.lbl_file_status = QLabel("Brak wczytanego pliku")
         layout_file.addWidget(self.btn_load)
         layout_file.addWidget(self.lbl_file_status)
@@ -59,7 +58,6 @@ class MainWindow(QMainWindow):
         self.ibox_mes_num = QLineEdit()
         self.ibox_mes_num.setPlaceholderText("Wpisz wartość...")
         lbl_mes_num = QLabel("Ilość pomiarów:")
-        
         layout_meas_num.addWidget(lbl_mes_num)
         layout_meas_num.addWidget(self.ibox_mes_num)
         group_meas_num.setLayout(layout_meas_num)
@@ -159,6 +157,7 @@ class MainWindow(QMainWindow):
         layout_plots.addWidget(self.canvas_dimless)
 
         #SIGNALS
+        self.btn_load.clicked.connect(self.load_file)
         self.btn_calculate.clicked.connect(self.on_plot_processed_clicked)
         self.btn_find_time.clicked.connect(self.on_find_time_clicked)
 
@@ -167,11 +166,15 @@ class MainWindow(QMainWindow):
         main_layout.addLayout(layout_plots, stretch=3)
         self.load_stylesheet("style.qss")
 
+    # --- ładowanie stylów ---
     def load_stylesheet(self, path):
         with open(path, "r") as f:
             style = f.read()
             self.setStyleSheet(style)
 
+    
+
+    # --- Wczytanie danych z pliku ---
     def load_file(self):
         # Okno dialogowe wyboru pliku
         file_path, _ = QFileDialog.getOpenFileName(
@@ -204,6 +207,8 @@ class MainWindow(QMainWindow):
                     self.mix_time_results_lbls[channel] = lbl
                 self.btn_plot_raw.setDisabled(False)
                 self.btn_calculate.setDisabled(False)
+                self.ax.clear()
+                self.ax_dimless.clear()
             else:
                 self.lbl_file_status.setText(message)
 

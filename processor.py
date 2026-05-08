@@ -10,7 +10,6 @@ class DataProcessor:
         self.raw_data = None
         self.channels = []
         self.processed_data = None
-
         self.mixing_times = {}
 
 

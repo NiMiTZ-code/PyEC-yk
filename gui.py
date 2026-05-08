@@ -31,10 +31,10 @@ class MainWindow(QMainWindow):
         main_layout = QHBoxLayout(central_widget)
 
         # --- PANEL LEWY (Sterowanie) ---
-        control_panel = QVBoxLayout()
-        control_panel.setAlignment(Qt.AlignTop)
         control_widget = QWidget()
+        control_panel = QVBoxLayout()
         control_widget.setLayout(control_panel)
+        control_panel.setAlignment(Qt.AlignTop)
         control_widget.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
 
         # Sekcja Wczytywania
@@ -46,60 +46,69 @@ class MainWindow(QMainWindow):
         layout_file.addWidget(self.lbl_file_status)
         group_file.setLayout(layout_file)
 
-        #Sekcja wyboru kanałów
+        #Sekcja Obliczeń i Rysowania (docelowo)
+        group_calc = QGroupBox("2. Analiza i Wykresy")
+        layout_calc = QVBoxLayout()
+
+        #Podsekcja wyboru kanałów
         group_channel = QGroupBox("Wybór kanałów")
         self.layout_channel = QHBoxLayout()
         group_channel.setLayout(self.layout_channel)
 
-        #Sekcja ilości pomiarów
-        group_meas_num= QGroupBox()
+        #Podsekcja rysowania wykresu surowych danych
+        self.btn_plot_raw = QPushButton("Rysuj wykres przewodności")
+        self.btn_plot_raw.setDisabled(True)
+        
+        #Podsekcja ilości pomiarów do uśrednienia
+        meas_num_widget = QWidget()
         layout_meas_num = QHBoxLayout()
         self.ibox_mes_num = QLineEdit()
         self.ibox_mes_num.setPlaceholderText("Wpisz wartość...")
         lbl_mes_num = QLabel("Ilość pomiarów do uśrednienia:")
         layout_meas_num.addWidget(lbl_mes_num)
         layout_meas_num.addWidget(self.ibox_mes_num)
-        group_meas_num.setLayout(layout_meas_num)
+        meas_num_widget.setLayout(layout_meas_num)
 
-        #Sekcja wyników
-        self.group_res = QGroupBox("3. Wyniki")
-        layout_res = QVBoxLayout()
+        #Podsekcja obliczeń i rysowania wykresu stężenia bezwymiarowego
+        self.btn_calculate = QPushButton("Przelicz i rysuj wykres (Stężenie bezwymiarowe)")
+        self.btn_calculate.setDisabled(True)
 
+        #Podsekcja dodawania granic do wykresu
+        self.chbox_plot_limits = QCheckBox("Dodaj granice 0.95 - 1.05")
+        self.chbox_plot_limits.setDisabled(True)
+
+        #Podsekcja przedziału filtrowania do odczytu czasu mieszania
+        interval_widget = QWidget()
         layout_interval = QHBoxLayout()
         lbl_interval = QLabel("Przedział filtrowania (ilość punktów):")
         self.ibox_interval = QLineEdit()
         self.ibox_interval.setPlaceholderText("Wpisz wartość (np. 20)")
         self.ibox_interval.setText("1")  # Wpisujemy domyślną wartość na start!
-        
         layout_interval.addWidget(lbl_interval)
         layout_interval.addWidget(self.ibox_interval)
-        layout_res.addLayout(layout_interval)
+        interval_widget.setLayout(layout_interval)
 
-        self.layout_res_lbls = QVBoxLayout()
-        layout_res.addLayout(self.layout_res_lbls)
-
-        self.group_res.setLayout(layout_res)
-        self.group_res.setVisible(False)
-        
-        # Sekcja Obliczeń i Rysowania
-        group_calc = QGroupBox("2. Analiza i Wykresy")
-        layout_calc = QVBoxLayout()
-        self.btn_plot_raw = QPushButton("Rysuj wykres przewodności")
-        self.btn_plot_raw.setDisabled(True)
-        self.btn_calculate = QPushButton("Przelicz i rysuj wykres (Stężenie bezwymiarowe)")
-        self.btn_calculate.setDisabled(True)
-        self.chbox_plot_limits = QCheckBox("Dodaj granice 0.95 - 1.05")
-        self.chbox_plot_limits.setDisabled(True)
+        #Podsekcja odczytu czasu mieszania
         self.btn_find_time = QPushButton("Odczytaj czas mieszania")
         self.btn_find_time.setDisabled(True)
-        
+
+        #Ułożenie elementów panelu sterowania
         layout_calc.addWidget(group_channel)
         layout_calc.addWidget(self.btn_plot_raw)
-        layout_calc.addWidget(group_meas_num)
+        layout_calc.addWidget(meas_num_widget)
         layout_calc.addWidget(self.btn_calculate)
         layout_calc.addWidget(self.chbox_plot_limits)
+        layout_calc.addWidget(interval_widget)
         layout_calc.addWidget(self.btn_find_time)
         group_calc.setLayout(layout_calc)
+
+        #Sekcja wyników
+        self.group_res = QGroupBox("3. Wyniki")
+        layout_res = QVBoxLayout()
+        self.layout_res_lbls = QVBoxLayout()
+        layout_res.addLayout(self.layout_res_lbls)
+        self.group_res.setLayout(layout_res)
+        self.group_res.setVisible(False)
 
         #Export
         self.btn_export = QPushButton("Eksportuj wyniki do Excel")
@@ -108,7 +117,6 @@ class MainWindow(QMainWindow):
         layout_export = QVBoxLayout()
         layout_export.addWidget(self.btn_export)
         group_export.setLayout(layout_export)
-        
 
         #Help footer
         footer_layout = QHBoxLayout()
@@ -124,7 +132,6 @@ class MainWindow(QMainWindow):
         control_panel.addStretch()
         control_panel.addLayout(footer_layout)
         
-
         # --- PANEL PRAWY (Wykres Matplotlib) ---
         layout_plots = QVBoxLayout()
 

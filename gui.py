@@ -18,7 +18,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Analiza Krzywych Mieszania PK")
-        self.resize(1000, 600)
+        self.resize(1200, 750)
         
         self.processor = DataProcessor()
         self.checked_channels = []

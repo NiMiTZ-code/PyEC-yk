@@ -20,7 +20,6 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Analiza Krzywych Mieszania PK")
         self.resize(1000, 600)
         
-        
         self.processor = DataProcessor()
         self.checked_channels = []
         self.checkbox_dict = {}
@@ -57,7 +56,7 @@ class MainWindow(QMainWindow):
         layout_meas_num = QHBoxLayout()
         self.ibox_mes_num = QLineEdit()
         self.ibox_mes_num.setPlaceholderText("Wpisz wartość...")
-        lbl_mes_num = QLabel("Ilość pomiarów:")
+        lbl_mes_num = QLabel("Ilość pomiarów do uśrednienia:")
         layout_meas_num.addWidget(lbl_mes_num)
         layout_meas_num.addWidget(self.ibox_mes_num)
         group_meas_num.setLayout(layout_meas_num)
@@ -86,13 +85,11 @@ class MainWindow(QMainWindow):
         group_calc = QGroupBox("2. Analiza i Wykresy")
         layout_calc = QVBoxLayout()
         self.btn_plot_raw = QPushButton("Rysuj wykres przewodności")
-        self.btn_plot_raw.clicked.connect(self.plot_data)
         self.btn_plot_raw.setDisabled(True)
         self.btn_calculate = QPushButton("Przelicz i rysuj wykres (Stężenie bezwymiarowe)")
         self.btn_calculate.setDisabled(True)
         self.chbox_plot_limits = QCheckBox("Dodaj granice 0.95 - 1.05")
         self.chbox_plot_limits.setDisabled(True)
-        self.chbox_plot_limits.toggled.connect(self.on_plot_limits_toggled)
         self.btn_find_time = QPushButton("Odczytaj czas mieszania")
         self.btn_find_time.setDisabled(True)
         
@@ -107,7 +104,6 @@ class MainWindow(QMainWindow):
         #Export
         self.btn_export = QPushButton("Eksportuj wyniki do Excel")
         self.btn_export.setDisabled(True)
-        self.btn_export.clicked.connect(self.export_to_excel)
         group_export = QGroupBox("3. Export wyników")
         layout_export = QVBoxLayout()
         layout_export.addWidget(self.btn_export)
@@ -118,7 +114,6 @@ class MainWindow(QMainWindow):
         footer_layout = QHBoxLayout()
         self.btn_help = QPushButton(" Dokumentacja i Instrukcja Obsługi")
         self.btn_help.setIcon(self.style().standardIcon(QStyle.SP_MessageBoxQuestion))
-        self.btn_help.clicked.connect(self.show_documentation)
         footer_layout.addWidget(self.btn_help)
 
         # Dodanie grup do lewego panelu
@@ -140,7 +135,6 @@ class MainWindow(QMainWindow):
         self.figure_dimless = Figure()
         self.canvas_dimless = FigureCanvas(self.figure_dimless)
         self.ax_dimless = self.figure_dimless.add_subplot(111)
-        
 
         self.zoom = zoom_factory(self.ax_dimless)
         self.ph = panhandler(self.figure_dimless, button=2)
@@ -151,8 +145,12 @@ class MainWindow(QMainWindow):
 
         #SIGNALS
         self.btn_load.clicked.connect(self.load_file)
+        self.btn_plot_raw.clicked.connect(self.plot_data)
         self.btn_calculate.clicked.connect(self.on_plot_processed_clicked)
+        self.chbox_plot_limits.toggled.connect(self.on_plot_limits_toggled)
         self.btn_find_time.clicked.connect(self.on_find_time_clicked)
+        self.btn_export.clicked.connect(self.export_to_excel)
+        self.btn_help.clicked.connect(self.show_documentation)
 
         # Złożenie całości (rozciągnięcie wykresu proporcją stretch)
         main_layout.addWidget(control_widget, stretch=1)
@@ -193,7 +191,7 @@ class MainWindow(QMainWindow):
                 self.prepare_charts()
                 if self.chbox_plot_limits.isChecked():
                     self.chbox_plot_limits.setChecked(False)
-                    
+
                 self.lbl_file_status.setText(f"Wczytany plik: {file_path.split('/')[-1]}")
                 for i in reversed(range(self.layout_channel.count())):
                     self.layout_channel.itemAt(i).widget().setParent(None)
